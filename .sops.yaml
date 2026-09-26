@@ -1,0 +1,23 @@
+# sops encryption rules. Run `nix develop` first so `sops`/`age` are on PATH.
+#
+# 1. Generate your key (do this once, ANYWHERE - it doesn't need to be on
+#    the machine you provision from later, just somewhere you'll keep it):
+#      age-keygen -o age-key.txt
+#    This prints a line like: Public key: age1qyq...
+#    Put that public key below, replacing the placeholder.
+#
+# 2. NEVER commit age-key.txt. Back it up somewhere durable and outside
+#    git (password manager, offline drive) - without it, nothing encrypted
+#    with .sops.yaml can be decrypted, including the k3s join token and the
+#    TrueNAS API key.
+#
+# 3. Point sops at your key when encrypting/decrypting:
+#      export SOPS_AGE_KEY_FILE=/path/to/age-key.txt
+keys:
+  - &admin_key age1REPLACE_WITH_YOUR_AGE_PUBLIC_KEY
+
+creation_rules:
+  - path_regex: secrets/.*\.sops\.yaml$
+    key_groups:
+      - age:
+          - *admin_key

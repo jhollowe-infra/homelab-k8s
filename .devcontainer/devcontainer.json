@@ -9,6 +9,7 @@
 			"multiUser": true,
 			"version": "latest",
 			"packages": "nixd,nixfmt",
+			"flakeUri": "github:jhollowe-infra/homelab-k8s",
 		}
 	},
 	"customizations": {

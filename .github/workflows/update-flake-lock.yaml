@@ -2,11 +2,11 @@ name: Update flake.lock
 
 on:
   workflow_dispatch:
-  schedule:
-    # Weekly, Sunday 00:00 UTC. Covers every pinned input in flake.nix
-    # (nixpkgs, disko, colmena, sops-nix, nixos-anywhere) in one PR, since
-    # they're all tracked together in flake.lock.
-    - cron: "0 0 * * 0"
+  # schedule:
+  #   # Weekly, Sunday 00:00 UTC. Covers every pinned input in flake.nix
+  #   # (nixpkgs, disko, colmena, sops-nix, nixos-anywhere) in one PR, since
+  #   # they're all tracked together in flake.lock.
+  #   - cron: "0 0 * * 0"
 
 permissions:
   contents: write

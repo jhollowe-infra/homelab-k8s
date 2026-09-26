@@ -18,3 +18,14 @@ updates:
     labels:
       - dependencies
       - automated
+
+  - package-ecosystem: nix
+    directory: "/"
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: "flake"
+    groups:
+      inputs:
+        patterns:
+          - "*"

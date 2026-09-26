@@ -9,6 +9,8 @@
 			"multiUser": true,
 			"version": "latest",
 			"packages": "nixd,nixfmt",
+			"extraNixConfig": "experimental-features = nix-command flakes",
+			// "flakeUri": "github:jhollowe-infra/homelab-k8s",
 		}
 	},
 	"customizations": {
@@ -20,15 +22,10 @@
 				"redhat.vscode-yaml",
 			],
 			"settings": {
-				"nix.enableLanguageServer": true
+				"nix.enableLanguageServer": true,
 			}
 		}
-	}
-
-	// Use 'forwardPorts' to make a list of ports inside the container available locally.
-	// "forwardPorts": [],
-
-	// Use 'postCreateCommand' to run commands after the container is created.
-	// "postCreateCommand": "uname -a",
-
+	},
+	// The first time the dev container runs, install the flake's packages
+	"postCreateCommand": "nix profile install .",
 }

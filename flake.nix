@@ -2,13 +2,13 @@
   description = "homelab-k8s: NixOS + k3s cluster config and Proxmox VM tooling";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.11";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-26.05";
     disko = {
       url = "github:nix-community/disko";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     colmena = {
-      url = "github:zhaofengli/colmena";
+      url = "github:nix-community/colmena/v0.5.0";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     sops-nix = {
@@ -89,8 +89,9 @@
         };
       };
 
-      devShells.${system}.default = pkgs.mkShell {
-        packages = [
+      packages.${system}.default = pkgs.buildEnv {
+        name = "homelab-k8s-devshell";
+        paths = [
           pkgs.opentofu
           colmena.packages.${system}.colmena
           nixos-anywhere.packages.${system}.default
@@ -102,6 +103,10 @@
           pkgs.jq
           pkgs.openssh
         ];
+      };
+
+      devShells.${system}.default = pkgs.mkShell {
+        packages = self.packages.${system}.default;
         shellHook = ''
           echo "homelab-k8s dev shell: tofu, colmena, nixos-anywhere, sops, age, kubectl, helm available."
         '';

@@ -1,0 +1,43 @@
+# democratic-csi: dynamic NFS provisioning against TrueNAS for the bulk
+# storage tier (#3 in the storage design - e.g. Jellyfin's media library).
+#
+# The actual TrueNAS connection details (host, API key, dataset path) are
+# NOT in this file - they're sensitive and go in a sops-encrypted secret
+# instead (see secrets/README.md and cluster-bootstrap/truenas-driver-config.example.yaml).
+#
+# YAML structure/field names below verified against the democratic-csi
+# chart source (stable/democratic-csi/values.yaml and
+# stable/democratic-csi/examples/freenas-nfs.yaml, charts repo master
+# branch): `csiDriver.name`, the `storageClasses` list shape (name,
+# defaultClass, reclaimPolicy, volumeBindingMode, allowVolumeExpansion,
+# parameters.fsType, mountOptions), and `driver.existingConfigSecret` all
+# match the chart's own keys and the freenas-nfs example exactly.
+#
+# Install:
+#   helm repo add democratic-csi https://democratic-csi.github.io/charts/
+#   helm repo update
+#   kubectl create namespace democratic-csi
+#   kubectl apply -f <(sops -d ../secrets/truenas-driver-config.sops.yaml) -n democratic-csi
+#   helm install truenas-nfs democratic-csi/democratic-csi \
+#     --namespace democratic-csi \
+#     --values cluster-bootstrap/democratic-csi-truenas-values.yaml
+
+csiDriver:
+  name: "org.democratic-csi.truenas-nfs"
+
+storageClasses:
+  - name: truenas-nfs
+    defaultClass: false
+    reclaimPolicy: Delete
+    volumeBindingMode: Immediate
+    allowVolumeExpansion: true
+    parameters:
+      fsType: nfs
+    mountOptions:
+      - noatime
+      - nfsvers=4
+
+driver:
+  # References the Secret created from truenas-driver-config.sops.yaml,
+  # instead of putting the API key/dataset path in this (unencrypted) file.
+  existingConfigSecret: truenas-nfs-driver-config

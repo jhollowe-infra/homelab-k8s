@@ -1,2 +1,242 @@
 # homelab-k8s
-Declarative kubernetes configuration running k3s on NixOS; made with the help of an LLM
+
+> [!WARNING]
+> This was repo's contents were created by an LLM and have not yet been validated. 
+
+Declarative configuration and tooling for a 3-node k3s Kubernetes cluster
+running on NixOS VMs on Proxmox. **App deployment (GitOps) lives in a
+separate repo** — this repo only covers: the Proxmox VM template, the VMs
+themselves, the NixOS/k3s node configuration, and the storage
+infrastructure (Longhorn, TrueNAS CSI) the cluster itself depends on.
+
+## Topology
+
+- 3 physical Proxmox hosts (in one Proxmox cluster, shared storage), 1 k8s
+  VM per host.
+- All 3 nodes run **both** control-plane and worker roles (k3s embedded
+  etcd HA across all 3).
+- Every node has its CPU's integrated GPU (Intel QuickSync-capable, e.g.
+  UHD 630 on Comet Lake) passed through for hardware video transcode via
+  VA-API.
+- One node (initially) also has a discrete NVIDIA GPU (a Quadro P620)
+  passed through, for workloads that specifically need CUDA/NVENC.
+- Apps request `homelab/quicksync: "true"` and/or `homelab/gpu-nvidia:
+  "true"` node labels (via `nodeSelector`, in the app repo) independently —
+  a pod can want either, both, or neither.
+
+## Storage design
+
+Three tiers, matched to what actually needs to be fast vs. cheap vs. bulk:
+
+1. **Boot disk** — minimal, holds the OS + k3s only (`hosts/common/disko.nix`).
+2. **Fast local, replicated** — a 2nd virtual disk per VM, on Proxmox local
+   storage, given to **Longhorn**. Longhorn replicates each volume across 2
+   of the 3 nodes, so a PVC survives one physical host going down and the
+   pod reschedules onto a node that already has the data. Use this for
+   small/latency-sensitive data — e.g. a media server's database and
+   config. This disk starts small and grows on demand — see
+   [Longhorn disk growth & alerting](#longhorn-disk-growth--alerting).
+3. **Bulk, network** — your TrueNAS NAS, exposed dynamically via
+   **democratic-csi** (NFS). Use this for large, less latency-sensitive
+   data — e.g. the media files themselves.
+
+A media server (e.g. Jellyfin) app or notes app (e.g. Nextcloud) would mount tier 2 for its database/config PVC and tier 3 for the media library/content PVC.
+
+## Why no custom Proxmox VM template build
+
+`nixos-anywhere` installs NixOS onto **any** running Linux over SSH (it
+kexecs a NixOS installer in place), so the VMs start from a generic minimal
+cloud image rather than a purpose-built template. Since the 3 Proxmox hosts
+share one cluster/storage, `image/build-base-template.sh` only needs to run
+**once**, from any single host — every node's VM clones that same template
+regardless of which physical host it lands on.
+
+## Layout
+
+```
+flake.nix              devShell with every tool pinned (tofu, colmena,
+                        nixos-anywhere, sops, age, kubectl, helm) — the
+                        only prerequisite on any machine is Nix itself.
+hosts/
+  common/               config shared by all 3 nodes (disks, k3s, quicksync)
+  k8s-node-{1,2,3}/      per-node config (hostname, cluster-init, GPU imports)
+nixos-modules/
+  k3s.nix                k3s server role + sops-nix token + node labels
+  gpu-intel-quicksync.nix  VA-API config for the iGPU (imported by all nodes)
+  gpu-nvidia.nix           NVIDIA driver/containerd config (opt-in per node)
+  auto-upgrade.nix         pull-based self-update, health-checked w/ rollback
+  longhorn-disk-growth.nix Longhorn disk auto-grow + Discord alert at 80%
+image/
+  build-base-template.sh  one-time: creates the shared Proxmox VM template
+terraform/
+  modules/vm/             one k8s node VM: clone template, 2 disks, hostpci
+  *.tf, terraform.tfvars.example
+cluster-bootstrap/
+  longhorn-values.yaml               Helm values for the fast-local tier
+  democratic-csi-truenas-values.yaml Helm values for the TrueNAS NFS tier
+secrets/
+  *.sops.yaml.example     templates — copy, fill in, then `sops -e -i`
+scripts/
+  bootstrap-cluster.sh     first-time: nixos-anywhere on all 3 nodes
+  add-node.sh              add a node after initial bootstrap
+```
+
+## Accuracy note
+
+Several exact field/option names in this repo (current names come from
+NixOS module options, the `bpg/proxmox` Terraform provider, and
+Longhorn/democratic-csi Helm charts) were researched via web search from
+this environment rather than confirmed against a live checkout of each
+project's source. Each file
+that depends on such details has an inline `NOTE:` comment pointing at
+where to verify it. Run `tofu plan`, `nix flake check`, and `helm show
+values <chart>` and compare before trusting any of it blind — this is
+explicit, not a formality: some field names here may be stale by the time
+you use this.
+
+## One-time setup
+
+1. Enter the dev shell (only prerequisite: [Nix](https://nixos.org/download) itself):
+   ```
+   nix develop
+   ```
+
+2. Generate an age key for secrets encryption, put its public key in
+   `.sops.yaml`, and back up the private key somewhere outside git:
+   ```
+   age-keygen -o age-key.txt
+   ```
+
+3. Fill in the secrets templates (k3s join token, Discord webhook URL for
+   disk-usage alerts, TrueNAS driver config) and encrypt them — see
+   `secrets/*.example` for exact steps.
+
+4. Copy `terraform/terraform.tfvars.example` to `terraform/terraform.tfvars`
+   and fill in your Proxmox endpoint/credentials and each node's PCI IDs
+   (`lspci -nn` on each physical host — the iGPU and, on the node with the
+   P620, its PCI address too).
+
+5. Build the shared Proxmox VM template (once, from any one host):
+   ```
+   PVE_HOST=pve1.lan ./image/build-base-template.sh
+   ```
+
+6. Create the VMs:
+   ```
+   tofu -chdir=terraform init
+   tofu -chdir=terraform apply
+   ```
+
+7. Install NixOS on all 3 and bootstrap the cluster:
+   ```
+   ./scripts/bootstrap-cluster.sh
+   ```
+
+8. Install the storage layer:
+   ```
+   export KUBECONFIG=$(pwd)/kubeconfig
+   helm repo add longhorn https://charts.longhorn.io
+   helm repo add democratic-csi https://democratic-csi.github.io/charts/
+   helm repo update
+   helm install longhorn longhorn/longhorn -n longhorn-system --create-namespace \
+     -f cluster-bootstrap/longhorn-values.yaml
+   kubectl create namespace democratic-csi
+   kubectl apply -f <(sops -d secrets/truenas-driver-config.sops.yaml) -n democratic-csi
+   helm install truenas-nfs democratic-csi/democratic-csi -n democratic-csi \
+     -f cluster-bootstrap/democratic-csi-truenas-values.yaml
+   ```
+
+Your app-deployment repo (Flux/ArgoCD, when you get to it) points at this
+cluster's kubeconfig from here on; it doesn't need anything else from this
+repo.
+
+## Day-2 operations
+
+- **Add a node**: `./scripts/add-node.sh <hostname>` (after adding its
+  `hosts/<name>/`, `flake.nix`, and `terraform.tfvars` entries).
+- **Push a config update to all nodes immediately**: `colmena apply`.
+- **Push a config update to one node immediately**: `colmena apply --on <hostname>`.
+- **Nodes also self-update on a schedule** — see below.
+- **Keep tool versions current**: `.github/workflows/update-flake-lock.yml`
+  opens a weekly PR updating `flake.lock` (nixpkgs, disko, colmena,
+  sops-nix, nixos-anywhere); Dependabot (`.github/dependabot.yml`) opens
+  PRs for the `bpg/proxmox` Terraform provider and GitHub Actions versions.
+
+## Self-updating nodes (pull-based)
+
+Each node independently pulls this repo's flake and applies it on its own
+schedule, via `nixos-modules/auto-upgrade.nix` — you don't have to run
+`colmena apply` from a central machine for routine config changes. This
+only covers the NixOS side; Terraform/Proxmox-level changes (new node,
+resized disk, changed PCI passthrough) still require running `tofu apply`
+from a machine with your Proxmox credentials, since the VMs themselves
+can't create/resize themselves.
+
+**Before this works**, edit `flakeRef` in `nixos-modules/auto-upgrade.nix`
+to point at your actual GitHub repo (`github:<you>/homelab-k8s`) — it's a
+placeholder until then.
+
+**Safety, since all 3 nodes run etcd** (a bad rollout hitting all 3 at once
+could break quorum together):
+
+- Each node's upgrade window is staggered (`homelabAutoUpgrade.dates` in
+  each `hosts/<name>/default.nix`: node-1 at 03:00, node-2 at 05:00,
+  node-3 at 07:00), so a human has a window to notice a problem before it
+  reaches the next node.
+- Before upgrading, a node checks the cluster is currently healthy
+  (apiserver `/readyz`, all nodes `Ready`) and **skips this cycle** if not
+  — it won't pile a 2nd change onto a cluster that's still recovering from
+  the 1st.
+- After upgrading, it waits (up to 3 minutes) for itself to rejoin as
+  `Ready`. If it doesn't, it **automatically rolls back** to the previous
+  NixOS generation (`nixos-rebuild switch --rollback` — instant, the old
+  generation is still on disk) and restarts k3s.
+- `boot.loader.grub.configurationLimit` and `nix.gc` (in
+  `hosts/common/default.nix`) keep enough old generations around for that
+  rollback to actually have something to fall back to.
+
+Check on it with:
+```
+systemctl status homelab-auto-upgrade.timer   # next scheduled run
+journalctl -u homelab-auto-upgrade            # what happened last run (incl. any rollback)
+```
+
+This does **not** replace watching your nodes — it's a blast-radius limiter,
+not a substitute for noticing a node stuck rolling back every night. If you
+want alerting on that, `journalctl -u homelab-auto-upgrade` failing is the
+thing to hook a monitoring check to (out of scope for this repo).
+
+## Longhorn disk growth & alerting
+
+Each node's Longhorn disk (`terraform`'s `longhorn_disk_gb`, default **20GB**)
+is deliberately small at first, not sized for eventual usage — growing it
+later is a one-line change, so there's little reason to overallocate up
+front. `nixos-modules/longhorn-disk-growth.nix` runs a systemd timer every
+15 minutes on each node that:
+
+- Checks `/var/lib/longhorn` usage. Once it crosses **80%**, posts to a
+  Discord webhook (deduped — once on first crossing, then at most once a
+  day while still over threshold, until it drops back below).
+- Checks whether the underlying virtual disk has been enlarged since the
+  partition was created, and if so grows the partition + ext4 filesystem
+  online (`growpart` + `resize2fs`) — no reboot, no manual in-VM step.
+
+**To grow a node's disk** after getting the alert: bump that node's
+`longhorn_disk_gb` in `terraform/terraform.tfvars`, then `tofu -chdir=terraform
+apply`. The node picks up the larger virtual disk and grows into it on its
+next timer run (within 15 minutes) — that's the entire manual step.
+Shrinking is not supported (Proxmox/ext4 can't safely shrink this way), so
+it's fine to be conservative rather than guess high.
+
+Requires the `discord-webhook-url` secret (Discord channel → Integrations →
+Webhooks) filled in during [One-time setup](#one-time-setup) step 3.
+
+## Adding a GPU to another node
+
+1. On that physical Proxmox host, find the GPU's PCI ID: `lspci -nn`.
+2. Set `nvidia_pci_id` for that node in `terraform/terraform.tfvars`.
+3. In `hosts/<name>/default.nix`, uncomment/add
+   `imports = [ ../../nixos-modules/gpu-nvidia.nix ];`.
+4. `tofu -chdir=terraform apply`, then `colmena apply --on <hostname>`.
+5. Apps target it via `nodeSelector: { homelab/gpu-nvidia: "true" }` in the
+   app repo.

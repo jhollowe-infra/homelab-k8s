@@ -11,6 +11,16 @@ updates:
     schedule:
       interval: weekly
 
+  # flake.lock is managed by update-flake-lock workflow
+
+  - package-ecosystem: "terraform"
+    directory: "/terraform"
+    schedule:
+      interval: "weekly"
+    labels:
+      - dependencies
+      - automated
+
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:

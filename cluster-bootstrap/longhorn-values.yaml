@@ -1,0 +1,37 @@
+# Longhorn: replicated block storage for the fast-local tier (#2 in the
+# storage design - small/fast PVCs like Jellyfin's DB, backed by each
+# node's 2nd virtual disk, /var/lib/longhorn via hosts/common/disko.nix).
+#
+# This is cluster infrastructure (like the CNI), not an app, so it's
+# bootstrapped here rather than from the separate app-deployment repo.
+#
+# Field names below verified against the longhorn/longhorn chart source
+# (charts/longhorn/values.yaml, chart branch 1.13.x): `defaultSettings.
+# defaultDataPath`, and `persistence.{createStorageClass,defaultClass,
+# defaultClassReplicaCount,reclaimPolicy,defaultFsType}` all match the
+# chart's own keys and structure exactly. Note the chart's own default for
+# `defaultClassReplicaCount` is 3, not 2 - this file intentionally
+# overrides it (see comment below).
+#
+# Install:
+#   helm repo add longhorn https://charts.longhorn.io
+#   helm repo update
+#   kubectl create namespace longhorn-system
+#   helm install longhorn longhorn/longhorn \
+#     --namespace longhorn-system \
+#     --values cluster-bootstrap/longhorn-values.yaml
+
+defaultSettings:
+  # hosts/common/disko.nix mounts the 2nd disk here on every node.
+  defaultDataPath: "/var/lib/longhorn"
+
+persistence:
+  createStorageClass: true
+  defaultClass: true
+  # 2 replicas per volume (tolerates 1 node down). Not 3: all 3 nodes also
+  # run k3s control plane/etcd, so losing 2 at once already breaks quorum -
+  # a 3rd replica buys little extra safety for 1.5x the disk/write cost on
+  # hardware that doesn't have much to spare.
+  defaultClassReplicaCount: 2
+  reclaimPolicy: Delete
+  defaultFsType: ext4

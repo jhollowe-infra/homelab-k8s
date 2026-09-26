@@ -1,0 +1,22 @@
+# Terraform
+terraform/.terraform/
+terraform/terraform.tfstate
+terraform/terraform.tfstate.backup
+terraform/terraform.tfvars
+terraform/*.tfplan
+
+# Secrets - your age private key must NEVER be committed. The
+# secrets/*.sops.yaml files ARE meant to be committed, but only after
+# running `sops -e -i` on them - never commit them unencrypted. There is
+# no automated guard against that here, so double check `git diff
+# --cached` shows ciphertext (an "sops" block, ENC[...] values) before
+# committing any secrets/*.sops.yaml file.
+age-key.txt
+*.age
+
+# Cluster access
+kubeconfig
+
+# Nix
+result
+result-*

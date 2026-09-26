@@ -5,12 +5,11 @@
     ./disko.nix
     ../../nixos-modules/k3s.nix
     ../../nixos-modules/network.nix
-    ../../nixos-modules/gpu-intel-quicksync.nix
     ../../nixos-modules/auto-upgrade.nix
     ../../nixos-modules/longhorn-disk-growth.nix
   ];
 
-  system.stateVersion = "24.11";
+  system.stateVersion = "26.05";
 
   # Combined with each host's `networking.hostName`, gives FQDNs like
   # k8s-node-1.kube-nodes.johnhollowell.internal - used below (flake.nix
@@ -38,7 +37,11 @@
   networking.firewall.enable = true;
   # k3s/flannel/kubelet ports; tighten this once the cluster is stable
   # and you know exactly what needs to cross node boundaries.
-  networking.firewall.allowedTCPPorts = [ 22 6443 10250 ];
+  networking.firewall.allowedTCPPorts = [
+    22
+    6443
+    10250
+  ];
   networking.firewall.allowedUDPPorts = [ 8472 ];
 
   services.openssh = {
@@ -47,10 +50,17 @@
   };
 
   users.users.root.openssh.authorizedKeys.keys = [
-    # TODO: put your management SSH public key here
+    "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILjyoZakOhGPmzJx3zH8vEizvfMbM5Aa8iTuP5VAk+QK 3:jhollowe@JOHN-DESKTOP.internal.johnhollowell.com"
+    "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDr9lnRhfAPce+yYxNMIL9EWa7dOl2u0vjq5qVM5P17i jhollowe@JOHN-LAPTOP.internal.johnhollowell.com"
   ];
 
-  environment.systemPackages = with pkgs; [ vim git ];
+  environment.systemPackages = with pkgs; [
+    vim
+    git
+  ];
 
-  nix.settings.experimental-features = [ "nix-command" "flakes" ];
+  nix.settings.experimental-features = [
+    "nix-command"
+    "flakes"
+  ];
 }

@@ -34,7 +34,12 @@
 # binary referenced in the containerd runtime options below. The
 # containerdConfigTemplate option itself is defined in
 # nixos/modules/services/cluster/rancher/default.nix (see nixos-modules/k3s.nix).
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 {
   hardware.graphics.enable = true;
 

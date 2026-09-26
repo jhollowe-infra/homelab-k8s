@@ -38,7 +38,12 @@
 # source (nixos/modules/hardware/graphics.nix): `hardware.opengl.enable`
 # and `.package` are handled by mkRenamedOptionModule to
 # `hardware.graphics.{enable,package}`, so the option names below are current.
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 {
   boot.initrd.kernelModules = [ "i915" ];
 

@@ -12,8 +12,9 @@
 
   homelabAutoUpgrade.dates = "07:00";
 
-  # Example: this is the node with the GPU passed through by Terraform.
-  # Uncomment once terraform/modules/vm gpu_pci_id is set for this node
-  # and you've re-run tofu apply.
-  # imports = [ ../../nixos-modules/gpu-nvidia.nix ];
+  # make sure to update terraform and apply to have the PCIe passthrough before adding imports for hardware modules
+  imports = [
+    # ../../nixos-modules/gpu-intel-quicksync.nix
+    # ../../nixos-modules/gpu-nvidia.nix
+  ];
 }

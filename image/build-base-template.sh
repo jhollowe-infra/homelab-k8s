@@ -15,7 +15,7 @@ set -euo pipefail
 PVE_HOST="${PVE_HOST:?set PVE_HOST to the Proxmox host to run this against, e.g. pve1.lan}"
 TEMPLATE_ID="${TEMPLATE_ID:-9000}"
 TEMPLATE_NAME="${TEMPLATE_NAME:-nixos-anywhere-base}"
-STORAGE="${STORAGE:-local-lvm}"
+STORAGE="${STORAGE:-local-zfs}"
 DEBIAN_IMAGE_URL="https://cloud.debian.org/images/cloud/bookworm/latest/debian-12-generic-amd64.qcow2"
 
 img="$(mktemp -d)/base.qcow2"

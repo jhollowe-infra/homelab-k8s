@@ -15,4 +15,10 @@
   # node's own pre-check will see node-1 as NotReady and skip if node-1's
   # upgrade broke something it couldn't self-heal.
   homelabAutoUpgrade.dates = "05:00";
+
+  # make sure to update terraform and apply to have the PCIe passthrough before adding imports for hardware modules
+  imports = [
+    # ../../nixos-modules/gpu-intel-quicksync.nix
+    # ../../nixos-modules/gpu-nvidia.nix
+  ];
 }

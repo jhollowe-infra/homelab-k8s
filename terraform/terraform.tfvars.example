@@ -6,33 +6,30 @@ proxmox_insecure  = true # true if using Proxmox's self-signed cert
 
 template_id = 9000 # from image/build-base-template.sh output
 
-# Find each host's PCI IDs by running `lspci -nn` on that physical Proxmox
-# host (not in a VM). The iGPU is usually "00:02.0", the discrete GPU will
-# be on its own bus address, e.g. "01:00.0". Terraform wants full domain
-# form: "0000:00:02.0".
-# longhorn_disk_gb defaults to 20 (deliberately small - see
-# nixos-modules/longhorn-disk-growth.nix). To grow a node's disk later,
-# just raise its number here and `tofu apply`; the node alerts you via
-# Discord at 80% used and auto-grows into the new space within 15 minutes.
+# quicksync_pci_id / nvidia_pci_id are both optional - leave unset for
+# nodes with no PCI passthrough. When used, find the PCI ID by running
+# `lspci -nn` on that physical Proxmox host (not in a VM). The iGPU is
+# usually "00:02.0", the discrete GPU will be on its own bus address, e.g.
+# "01:00.0". Terraform wants full domain form: "0000:00:02.0".
+# longhorn_disk_gb defaults to 4 (deliberately small - see
+# nixos-modules/longhorn-disk-grow.nix and longhorn-disk-alert.nix). To
+# grow a node's disk later, just raise its number here and `tofu apply`;
+# the node alerts you via Discord at 80% used and auto-grows into the new
+# space within 15 minutes.
 nodes = {
   k8s-node-1 = {
-    proxmox_node     = "pve1"
-    vm_id            = 101
-    quicksync_pci_id = "0000:00:02.0"
-    ip_address       = "10.10.100.10/16"
+    proxmox_node = "pve1"
+    vm_id        = 101
+    ip_address   = "10.10.100.10/16"
   }
   k8s-node-2 = {
-    proxmox_node     = "pve2"
-    vm_id            = 102
-    quicksync_pci_id = "0000:00:02.0"
-    ip_address       = "10.10.100.11/16"
+    proxmox_node = "pve2"
+    vm_id        = 102
+    ip_address   = "10.10.100.11/16"
   }
   k8s-node-3 = {
-    proxmox_node     = "pve3"
-    vm_id            = 103
-    quicksync_pci_id = "0000:00:02.0"
-    nvidia_pci_id    = "0000:01:00.0" # the P620
-    longhorn_disk_gb = 50 # e.g. give the GPU-transcode node more room up front
-    ip_address       = "10.10.100.12/16"
+    proxmox_node = "pve3"
+    vm_id        = 103
+    ip_address   = "10.10.100.12/16"
   }
 }

@@ -19,6 +19,11 @@ let
 in
 {
   options.homelabK3s = {
+    enable = lib.mkOption {
+      type = lib.types.bool;
+      default = false;
+      description = "Whether to run k3s (+ its Longhorn prerequisites) on this node.";
+    };
     role = lib.mkOption {
       type = lib.types.enum [
         "server"
@@ -44,7 +49,16 @@ in
     };
   };
 
-  config = {
+  config = lib.mkIf cfg.enable {
+    # k3s/flannel/kubelet ports
+    networking.firewall.allowedTCPPorts = [
+      6443 # k8s API
+      10250 #kublet API
+    ];
+    networking.firewall.allowedUDPPorts = [
+      8472 # VXLAN
+    ];
+
     # k3s join token: generated once (scripts/bootstrap-cluster.sh) and
     # stored encrypted via sops-nix, decrypted to this path at activation.
     sops.secrets.k3s-token = {

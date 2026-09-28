@@ -6,7 +6,7 @@
     ../../nixos-modules/k3s.nix
     ../../nixos-modules/network.nix
     ../../nixos-modules/auto-upgrade.nix
-    ../../nixos-modules/longhorn-disk-growth.nix
+    # ../../nixos-modules/longhorn-disk-growth.nix
   ];
 
   system.stateVersion = "26.05";
@@ -35,14 +35,7 @@
   };
 
   networking.firewall.enable = true;
-  # k3s/flannel/kubelet ports; tighten this once the cluster is stable
-  # and you know exactly what needs to cross node boundaries.
-  networking.firewall.allowedTCPPorts = [
-    22
-    6443
-    10250
-  ];
-  networking.firewall.allowedUDPPorts = [ 8472 ];
+  networking.firewall.allowedTCPPorts = [ 22 ];
 
   services.openssh = {
     enable = true;

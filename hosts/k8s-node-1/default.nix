@@ -6,6 +6,7 @@
 
   # First node: initializes the k3s/etcd cluster.
   homelabK3s = {
+    enable = false;
     role = "server";
     clusterInit = true;
   };

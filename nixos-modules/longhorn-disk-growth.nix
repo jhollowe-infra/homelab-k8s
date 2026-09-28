@@ -28,7 +28,12 @@
 # design, not sourced from nixpkgs - still worth testing manually
 # (`systemctl start homelab-longhorn-disk-growth`) after a real Terraform
 # disk resize before trusting the unattended timer.
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 let
   cfg = config.homelabLonghornDiskGrowth;
 in
@@ -50,7 +55,12 @@ in
 
     systemd.services.homelab-longhorn-disk-growth = {
       description = "Grow the Longhorn disk if enlarged, then alert on high usage";
-      path = [ pkgs.cloud-utils pkgs.e2fsprogs pkgs.curl pkgs.coreutils ];
+      path = [
+        pkgs.cloud-utils
+        pkgs.e2fsprogs
+        pkgs.curl
+        pkgs.coreutils
+      ];
       serviceConfig.Type = "oneshot";
       script = ''
         set +e

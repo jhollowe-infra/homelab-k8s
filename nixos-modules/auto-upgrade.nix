@@ -35,14 +35,22 @@
 # `systemctl start homelab-auto-upgrade` test on one node before trusting
 # the unattended schedule, since that logic hasn't been exercised against
 # a live cluster.
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 let
   cfg = config.homelabAutoUpgrade;
-  flakeRef = "github:REPLACE_WITH_YOUR_GITHUB_USER/homelab-k8s";
+  flakeRef = "github:jhollowe/homelab-k8s";
 
   upgradeScript = pkgs.writeShellApplication {
     name = "homelab-auto-upgrade";
-    runtimeInputs = [ config.services.k3s.package pkgs.nixos-rebuild ];
+    runtimeInputs = [
+      config.services.k3s.package
+      pkgs.nixos-rebuild
+    ];
     text = ''
       export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
 

@@ -61,11 +61,14 @@ resource "proxmox_virtual_environment_vm" "this" {
     vlan_id = var.vlan_id
   }
 
-  # Every node's iGPU (QuickSync/VA-API), required.
-  hostpci {
-    device = "hostpci0"
-    id     = var.quicksync_pci_id
-    pcie   = true
+  # Intel iGPU (QuickSync/VA-API), only on nodes that pass one through.
+  dynamic "hostpci" {
+    for_each = var.quicksync_pci_id == null ? [] : [var.quicksync_pci_id]
+    content {
+      device = "hostpci0"
+      id     = hostpci.value
+      pcie   = true
+    }
   }
 
   # Discrete NVIDIA GPU, only on nodes that have one.

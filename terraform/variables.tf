@@ -23,7 +23,7 @@ variable "nodes" {
   type = map(object({
     proxmox_node     = string
     vm_id            = number
-    quicksync_pci_id = string
+    quicksync_pci_id = optional(string)
     nvidia_pci_id    = optional(string)
     # Static IPv4 in CIDR form, e.g. "10.10.100.10/16" - must match this
     # node's homelabNetwork.address in hosts/<name>/default.nix.

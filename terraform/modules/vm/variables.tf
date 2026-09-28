@@ -70,8 +70,9 @@ variable "gateway" {
 }
 
 variable "quicksync_pci_id" {
-  description = "PCI address of this host's iGPU (from `lspci -nn | grep VGA` on the Proxmox host), e.g. \"0000:00:02.0\". Every node has one, so this is required."
+  description = "PCI address of this host's iGPU (from `lspci -nn | grep VGA` on the Proxmox host), e.g. \"0000:00:02.0\". Leave null for nodes without iGPU passthrough."
   type        = string
+  default     = null
 }
 
 variable "nvidia_pci_id" {

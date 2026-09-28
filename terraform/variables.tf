@@ -30,8 +30,9 @@ variable "nodes" {
     ip_address       = string
     cores            = optional(number, 4)
     memory_mb        = optional(number, 8192)
-    # Start small (see nixos-modules/longhorn-disk-growth.nix - the node
-    # alerts at 80% used and auto-grows into whatever you bump this to).
+    # Start small (see nixos-modules/longhorn-disk-alert.nix - the node
+    # alerts at 80% used - and nixos-modules/longhorn-disk-grow.nix, which
+    # auto-grows into whatever you bump this to).
     longhorn_disk_gb = optional(number, 4)
   }))
 }

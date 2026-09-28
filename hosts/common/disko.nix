@@ -36,8 +36,9 @@
       # Mounted at /var/lib/longhorn; Longhorn (installed via Helm, see
       # cluster-bootstrap/longhorn-values.yaml) treats this path as one of
       # its per-node disks. Sized deliberately small at first - see
-      # nixos-modules/longhorn-disk-growth.nix for the alert+auto-grow
-      # flow that lets you expand it later without reinstalling.
+      # nixos-modules/longhorn-disk-grow.nix (auto-grow) and
+      # nixos-modules/longhorn-disk-alert.nix (usage alert) for the flow
+      # that lets you expand it later without reinstalling.
       longhorn = {
         device = "/dev/vdb";
         type = "disk";

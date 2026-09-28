@@ -66,7 +66,8 @@ nixos-modules/
   gpu-intel-quicksync.nix  VA-API config for the iGPU (imported by all nodes)
   gpu-nvidia.nix           NVIDIA driver/containerd config (opt-in per node)
   auto-upgrade.nix         pull-based self-update, health-checked w/ rollback
-  longhorn-disk-growth.nix Longhorn disk auto-grow + Discord alert at 80%
+  longhorn-disk-grow.nix   Longhorn disk auto-grow (partition + filesystem)
+  longhorn-disk-alert.nix  Discord alert when Longhorn disk usage crosses 80%
 image/
   build-base-template.sh  one-time: creates the shared Proxmox VM template
 terraform/
@@ -196,18 +197,19 @@ thing to hook a monitoring check to (out of scope for this repo).
 
 ## Longhorn disk growth & alerting
 
-Each node's Longhorn disk (`terraform`'s `longhorn_disk_gb`, default **20GB**)
+Each node's Longhorn disk (`terraform`'s `longhorn_disk_gb`, default **4GB**)
 is deliberately small at first, not sized for eventual usage — growing it
 later is a one-line change, so there's little reason to overallocate up
-front. `nixos-modules/longhorn-disk-growth.nix` runs a systemd timer every
-15 minutes on each node that:
+front. Two independent systemd timers run every 15 minutes on each node:
 
-- Checks `/var/lib/longhorn` usage. Once it crosses **80%**, posts to a
-  Discord webhook (deduped — once on first crossing, then at most once a
-  day while still over threshold, until it drops back below).
-- Checks whether the underlying virtual disk has been enlarged since the
+- `nixos-modules/longhorn-disk-grow.nix` (`homelab-longhorn-disk-grow`):
+  checks whether the underlying virtual disk has been enlarged since the
   partition was created, and if so grows the partition + ext4 filesystem
   online (`growpart` + `resize2fs`) — no reboot, no manual in-VM step.
+- `nixos-modules/longhorn-disk-alert.nix` (`homelab-longhorn-disk-alert`):
+  checks `/var/lib/longhorn` usage. Once it crosses **80%**, posts to a
+  Discord webhook (deduped — once on first crossing, then at most once a
+  day while still over threshold, until it drops back below).
 
 **To grow a node's disk** after getting the alert: bump that node's
 `longhorn_disk_gb` in `terraform/terraform.tfvars`, then `tofu -chdir=terraform

@@ -1,7 +1,7 @@
 # TODO: Monitoring, metrics & alerting
 
 Currently the only alerting in the homelab is the one-off Discord webhook in
-`nixos-modules/longhorn-disk-growth.nix` (Longhorn disk usage). This note is
+`nixos-modules/longhorn-disk-alert.nix` (Longhorn disk usage). This note is
 research/planning for a proper metrics + alerting stack, to implement later.
 
 > NOTE on sourcing: everything below marked with a source came from web

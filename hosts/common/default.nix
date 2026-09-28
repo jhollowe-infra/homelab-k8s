@@ -6,7 +6,8 @@
     ../../nixos-modules/k3s.nix
     ../../nixos-modules/network.nix
     ../../nixos-modules/auto-upgrade.nix
-    # ../../nixos-modules/longhorn-disk-growth.nix
+    # ../../nixos-modules/longhorn-disk-grow.nix
+    # ../../nixos-modules/longhorn-disk-alert.nix
   ];
 
   system.stateVersion = "26.05";

@@ -31,7 +31,7 @@ variable "boot_disk_gb" {
 }
 
 variable "longhorn_disk_gb" {
-  description = "Size of the 2nd disk given entirely to Longhorn. Start small: nixos-modules/longhorn-disk-growth.nix alerts (Discord) at 80% used and auto-grows the in-VM partition/filesystem once you increase this value and re-apply - shrinking is NOT supported (Proxmox/ext4 can't safely shrink this way), so it's fine to be conservative here."
+  description = "Size of the 2nd disk given entirely to Longhorn. Start small: nixos-modules/longhorn-disk-alert.nix alerts (Discord) at 80% used, and nixos-modules/longhorn-disk-grow.nix auto-grows the in-VM partition/filesystem once you increase this value and re-apply - shrinking is NOT supported (Proxmox/ext4 can't safely shrink this way), so it's fine to be conservative here."
   type        = number
   default     = 4
 }

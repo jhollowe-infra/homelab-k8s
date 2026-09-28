@@ -52,7 +52,7 @@ none of it gets silently assumed-working just because `nix flake check` /
       graphics, serial, or IPMI/BMC) after the iGPU is bound to vfio-pci -
       per the caveat in `docs/proxmox-host-setup.md`.
 
-## Longhorn disk growth (`nixos-modules/longhorn-disk-growth.nix`)
+## Longhorn disk growth (`nixos-modules/longhorn-disk-grow.nix`) & alerting (`nixos-modules/longhorn-disk-alert.nix`)
 
 - [ ] Bump `longhorn_disk_gb` in `terraform.tfvars`, `tofu apply`, and
       confirm the timer actually detects the enlarged `/dev/vdb`, runs
@@ -65,9 +65,10 @@ none of it gets silently assumed-working just because `nix flake check` /
 - [ ] Cross 80% real usage on `/var/lib/longhorn` and confirm the Discord
       webhook fires exactly once, then at most once/day while still over
       threshold, and stops once usage drops back below 80%.
-- [ ] Manually run `systemctl start homelab-longhorn-disk-growth` once
-      before trusting the unattended 15-minute timer, per the module's own
-      comment.
+- [ ] Manually run `systemctl start homelab-longhorn-disk-grow` and
+      `systemctl start homelab-longhorn-disk-alert` once each before
+      trusting the unattended 15-minute timers, per the modules' own
+      comments.
 
 ## Auto-upgrade + rollback (`nixos-modules/auto-upgrade.nix`)
 

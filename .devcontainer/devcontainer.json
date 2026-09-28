@@ -20,12 +20,16 @@
 				"mhutchie.git-graph",
 				"ms-kubernetes-tools.vscode-kubernetes-tools",
 				"redhat.vscode-yaml",
+				"signageos.signageos-vscode-sops",
 			],
 			"settings": {
 				"nix.enableLanguageServer": true,
 			}
 		}
 	},
+	"containerEnv": {
+		"SOPS_AGE_KEY_FILE": "/workspaces/homelab-k8s/age-key.txt"
+	},
 	// The first time the dev container runs, install the flake's packages
-	"postCreateCommand": "nix profile install .",
+	"postCreateCommand": "nix profile add .",
 }

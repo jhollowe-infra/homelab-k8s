@@ -55,5 +55,7 @@
 
   environment.systemPackages = with pkgs; [
     btop
+    iftop
+    iotop
   ];
 }

@@ -16,6 +16,7 @@
 	"customizations": {
 		"vscode": {
 			"extensions": [
+				"HashiCorp.terraform",
 				"jnoortheen.nix-ide",
 				"mhutchie.git-graph",
 				"ms-kubernetes-tools.vscode-kubernetes-tools",

@@ -44,7 +44,8 @@ before VFIO can, and bind it to vfio-pci instead. In
 `/etc/modprobe.d/vfio.conf`:
 ```
 options vfio-pci ids=8086:9bc8,10de:1cb6
-blacklist i915       # only if you don't need the iGPU on the Proxmox host itself
+# only if you don't need the iGPU on the Proxmox host itself
+blacklist i915
 blacklist nouveau
 blacklist nvidia
 ```

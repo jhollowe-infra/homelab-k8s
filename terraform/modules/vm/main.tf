@@ -104,8 +104,6 @@ resource "proxmox_virtual_environment_vm" "this" {
         gateway = var.gateway
       }
     }
-    user = "root"
-    password = "temp_password"
   }
 
   lifecycle {

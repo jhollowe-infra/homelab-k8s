@@ -1,6 +1,6 @@
 { ... }:
 {
-  networking.hostName = "k8s-node-3";
+  networking.hostName = "hl01-kube03";
 
   homelabNetwork.address = "10.10.100.12/16";
 
@@ -8,7 +8,7 @@
     enable = false;
     role = "server";
     clusterInit = false;
-    serverAddr = "https://k8s-node-1.kube-nodes.johnhollowell.internal:6443";
+    serverAddr = "https://hl01-kube01.kube-nodes.johnhollowell.internal:6443";
   };
 
   homelabAutoUpgrade.dates = "07:00";

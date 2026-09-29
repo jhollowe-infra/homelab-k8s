@@ -1,6 +1,6 @@
 { ... }:
 {
-  networking.hostName = "k8s-node-1";
+  networking.hostName = "hl01-kube01";
 
   homelabNetwork.address = "10.10.100.10/16";
 

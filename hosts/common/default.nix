@@ -13,7 +13,7 @@
   system.stateVersion = "26.05";
 
   # Combined with each host's `networking.hostName`, gives FQDNs like
-  # k8s-node-1.kube-nodes.johnhollowell.internal - used below (flake.nix
+  # hl01-kube01.kube-nodes.johnhollowell.internal - used below (flake.nix
   # Colmena targetHost, homelabK3s.serverAddr).
   networking.domain = "kube-nodes.johnhollowell.internal";
 

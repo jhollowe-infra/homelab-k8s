@@ -130,8 +130,8 @@ a search summary):
   embedded HA etcd across all 3 nodes (per `nixos-modules/k3s.nix`), but
   there's currently no VIP for the *API server* itself — clients
   (`colmena`, `kubectl`, `serverAddr` on joining nodes) hit a specific
-  node's IP (`k8s-node-1.kube-nodes.johnhollowell.internal:6443`, see
-  `hosts/k8s-node-2/default.nix` and `hosts/k8s-node-3/default.nix`).
+  node's IP (`hl01-kube01.kube-nodes.johnhollowell.internal:6443`, see
+  `hosts/hl01-kube02/default.nix` and `hosts/hl01-kube03/default.nix`).
   That's a separate, narrower problem from "get internet traffic to
   Services" (this note's actual ask), but worth flagging as related: if
   API-server HA (surviving node-1 specifically going down) ever becomes a
@@ -177,14 +177,14 @@ server nodes identically):
    node's own hostname — clients hitting the VIP would otherwise fail TLS
    verification. This is the one change that touches an *existing* file
    rather than being fully additive.
-3. Change `serverAddr` in `hosts/k8s-node-2/default.nix` and
-   `hosts/k8s-node-3/default.nix` from
-   `https://k8s-node-1.kube-nodes.johnhollowell.internal:6443` to
+3. Change `serverAddr` in `hosts/hl01-kube02/default.nix` and
+   `hosts/hl01-kube03/default.nix` from
+   `https://hl01-kube01.kube-nodes.johnhollowell.internal:6443` to
    `https://k8s-api-vip.kube-nodes.johnhollowell.internal:6443`.
    Bootstrapping order note: node-1 (`clusterInit = true`) still comes up
    first and is briefly the sole holder of the VIP; nodes 2/3 join via the
    VIP once their own kube-vip static pods are up too.
-4. Update anywhere else currently hardcoding `k8s-node-1` for API access —
+4. Update anywhere else currently hardcoding `hl01-kube01` for API access —
    `scripts/bootstrap-cluster.sh`'s kubeconfig-fetch/rewrite step in
    particular — to use the VIP hostname instead (`flake.nix`'s Colmena
    `deployment.targetHost` stays per-node since that's SSH for config

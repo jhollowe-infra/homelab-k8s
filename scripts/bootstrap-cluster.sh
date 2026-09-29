@@ -8,14 +8,14 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-for host in k8s-node-1 k8s-node-2 k8s-node-3; do
+for host in hl01-kube01 hl01-kube02 hl01-kube03; do
   ip="$(tofu -chdir=terraform output -json node_ips | jq -r ".\"${host}\"[0][0]")"
   echo "==> Installing NixOS on ${host} (${ip})"
   SSHPASS=nixos nixos-anywhere --env-password --flake ".#${host}" "root@${ip}"
 done
 
-echo "==> Fetching kubeconfig from k8s-node-1"
-node1_ip="$(tofu -chdir=terraform output -json node_installed_ips | jq -r '."k8s-node-1"')"
+echo "==> Fetching kubeconfig from hl01-kube01"
+node1_ip="$(tofu -chdir=terraform output -json node_installed_ips | jq -r '."hl01-kube01"')"
 ssh "root@${node1_ip}" cat /etc/rancher/k3s/k3s.yaml \
   | sed "s/127.0.0.1/${node1_ip}/" > kubeconfig
 chmod 600 kubeconfig

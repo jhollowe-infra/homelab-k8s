@@ -61,9 +61,9 @@
       # directly against a node instead of going through Colmena.
       nixosConfigurations = {
         bootstrap-iso = bootstrapIso;
-        k8s-node-1 = mkHost "k8s-node-1" [ ];
-        k8s-node-2 = mkHost "k8s-node-2" [ ];
-        k8s-node-3 = mkHost "k8s-node-3" [ ];
+        hl01-kube01 = mkHost "hl01-kube01" [ ];
+        hl01-kube02 = mkHost "hl01-kube02" [ ];
+        hl01-kube03 = mkHost "hl01-kube03" [ ];
       };
 
       # Colmena hive for day-2 config deploys across all nodes at once.
@@ -81,17 +81,17 @@
             ./hosts/common
           ];
         };
-        k8s-node-1 = { ... }: {
-          deployment.targetHost = "k8s-node-1.kube-nodes.johnhollowell.internal";
-          imports = [ ./hosts/k8s-node-1 ];
+        hl01-kube01 = { ... }: {
+          deployment.targetHost = "hl01-kube01.kube-nodes.johnhollowell.internal";
+          imports = [ ./hosts/hl01-kube01 ];
         };
-        k8s-node-2 = { ... }: {
-          deployment.targetHost = "k8s-node-2.kube-nodes.johnhollowell.internal";
-          imports = [ ./hosts/k8s-node-2 ];
+        hl01-kube02 = { ... }: {
+          deployment.targetHost = "hl01-kube02.kube-nodes.johnhollowell.internal";
+          imports = [ ./hosts/hl01-kube02 ];
         };
-        k8s-node-3 = { ... }: {
-          deployment.targetHost = "k8s-node-3.kube-nodes.johnhollowell.internal";
-          imports = [ ./hosts/k8s-node-3 ];
+        hl01-kube03 = { ... }: {
+          deployment.targetHost = "hl01-kube03.kube-nodes.johnhollowell.internal";
+          imports = [ ./hosts/hl01-kube03 ];
         };
       };
 

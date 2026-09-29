@@ -1,6 +1,6 @@
 # Discrete NVIDIA GPU passthrough support. Import this only on the node(s)
 # that actually have an NVIDIA card passed through via Terraform hostpci
-# (see hosts/k8s-node-3/default.nix for the commented-out example).
+# (see hosts/hl01-kube03/default.nix for the commented-out example).
 #
 # Pinned for a Quadro P620 (Pascal / GP107):
 #   - `open = false` is not optional here - Pascal has no GSP (GPU System

@@ -5,7 +5,7 @@
   homelabNetwork.address = "10.10.100.11/16";
 
   homelabK3s = {
-    enable = false;
+    # enable = true;
     role = "server";
     clusterInit = false;
     serverAddr = "https://hl01-kube01.kube-nodes.johnhollowell.internal:6443";

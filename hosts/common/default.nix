@@ -12,6 +12,12 @@
 
   system.stateVersion = "26.05";
 
+  # make sure the initramfs has the modules needed to use virtio devices/disks
+  boot.initrd.availableKernelModules = [
+    "virtio_pci"
+    "virtio_scsi"
+  ];
+
   # Combined with each host's `networking.hostName`, gives FQDNs like
   # hl01-kube01.kube-nodes.johnhollowell.internal - used below (flake.nix
   # Colmena targetHost, homelabK3s.serverAddr).

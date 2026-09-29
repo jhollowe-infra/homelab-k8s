@@ -51,7 +51,6 @@ resource "proxmox_virtual_environment_vm" "this" {
     datastore_id = var.boot_datastore
     interface    = "scsi0"
     size         = var.boot_disk_gb
-    iothread     = true
     discard      = "on"
     ssd          = true
   }
@@ -60,7 +59,6 @@ resource "proxmox_virtual_environment_vm" "this" {
     datastore_id = var.longhorn_datastore
     interface    = "scsi1"
     size         = var.longhorn_disk_gb
-    iothread     = true
     discard      = "on"
     ssd          = true
   }

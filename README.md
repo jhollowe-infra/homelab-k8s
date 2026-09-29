@@ -95,6 +95,11 @@ scripts/
    ```
    age-keygen -o age-key.txt
    ```
+  Keep `age-key.txt` in the repository root while bootstrapping. The
+  bootstrap script verifies it can decrypt the secrets file and securely
+  stages it on each node at `/var/lib/sops-nix/key.txt` before the first
+  activation. This key can decrypt every secret encrypted to its public key;
+  protect it accordingly and never commit it.
 
 3. Fill in the secrets templates (k3s join token, Discord webhook URL for
    disk-usage alerts, TrueNAS driver config) and encrypt them — see
@@ -129,6 +134,19 @@ scripts/
    ```
   The script uses each VM's DHCP address for the installer, then the
   configured static address for the installed cluster's kubeconfig.
+  It also provisions the local age key so sops-nix can create the k3s token
+  before k3s starts. Do not rerun this destructive install script on nodes
+  that already contain data.
+
+If a node is already installed but is missing `/var/lib/sops-nix/key.txt`,
+copy the private key to that node over SSH and retry the deployment. Run this
+from the repository root, changing `node` to each affected hostname:
+
+```
+node=hl01-kube01
+ssh "root@$node.kube-nodes.johnhollowell.internal" 'install -d -m 0755 /var/lib/sops-nix && umask 077 && cat > /var/lib/sops-nix/key.txt' < age-key.txt
+colmena apply --on "$node"
+```
 
 8. Install the storage layer:
    ```

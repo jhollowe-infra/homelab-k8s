@@ -50,10 +50,12 @@ in
   };
 
   config = lib.mkIf cfg.enable {
+    sops.age.keyFile = "/var/lib/sops-nix/key.txt";
+
     # k3s/flannel/kubelet ports
     networking.firewall.allowedTCPPorts = [
       6443 # k8s API
-      10250 #kublet API
+      10250 # kublet API
     ];
     networking.firewall.allowedUDPPorts = [
       8472 # VXLAN

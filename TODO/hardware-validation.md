@@ -14,7 +14,7 @@ none of it gets silently assumed-working just because `nix flake check` /
 - [ ] `nixos-anywhere --flake ".#k8s-node-N"` succeeds against a freshly
       cloned VM for all 3 nodes, in order.
 - [ ] `hosts/common/disko.nix` partitions both virtual disks as expected
-      (ESP+root on `/dev/vda`, Longhorn on `/dev/vdb`) and boots afterward -
+      (ESP+root on `/dev/sda`, Longhorn on `/dev/sdb`) and boots afterward -
       never applied to a real disk yet.
 - [ ] k3s actually forms a 3-node HA cluster: node-1 with `clusterInit =
       true` comes up, node-2/node-3 join via `serverAddr` and the sops-decrypted

@@ -1,12 +1,12 @@
 # Declarative disk layout, applied by nixos-anywhere on first install.
 # Two virtual disks per VM (see terraform/modules/vm):
-#   /dev/vda - boot disk: minimal, just the NixOS system + k3s state
+#   /dev/sda - boot disk: minimal, just the NixOS system + k3s state
 #   /dev/vdb - given whole to Longhorn for replicated fast-local PVCs
 {
   disko.devices = {
     disk = {
       boot = {
-        device = "/dev/vda";
+        device = "/dev/sda";
         type = "disk";
         content = {
           type = "gpt";
@@ -40,7 +40,7 @@
       # nixos-modules/longhorn-disk-alert.nix (usage alert) for the flow
       # that lets you expand it later without reinstalling.
       longhorn = {
-        device = "/dev/vdb";
+        device = "/dev/sdb";
         type = "disk";
         content = {
           type = "gpt";

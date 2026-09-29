@@ -15,6 +15,18 @@ variable "template_id" {
   type = number
 }
 
+variable "cloud_init_password" {
+  description = "Temporary password for the cloud-init user."
+  type        = string
+  sensitive   = true
+}
+
+variable "cloud_init_datastore" {
+  description = "Proxmox datastore with Snippets content enabled."
+  type        = string
+  default     = "local"
+}
+
 variable "cores" {
   type    = number
   default = 4

@@ -15,6 +15,33 @@ terraform {
   }
 }
 
+locals {
+  cloud_init_user_data = {
+    disable_root = false
+    ssh_pwauth   = true
+    chpasswd = {
+      list   = "root:${var.cloud_init_password}"
+      expire = false
+    }
+    package_update = true
+    packages       = ["qemu-guest-agent"]
+    runcmd = [
+      ["systemctl", "enable", "--now", "qemu-guest-agent.service"],
+    ]
+  }
+}
+
+resource "proxmox_virtual_environment_file" "cloud_init" {
+  content_type = "snippets"
+  datastore_id = var.cloud_init_datastore
+  node_name    = var.proxmox_node
+
+  source_raw {
+    data      = "#cloud-config\n${yamlencode(local.cloud_init_user_data)}"
+    file_name = "${var.hostname}-cloud-config.yaml"
+  }
+}
+
 resource "proxmox_virtual_environment_vm" "this" {
   name      = var.hostname
   node_name = var.proxmox_node
@@ -93,11 +120,11 @@ resource "proxmox_virtual_environment_vm" "this" {
   }
 
   # NixOS is installed by nixos-anywhere after this VM boots the cloned
-  # template once; Proxmox cloud-init here just gets us SSH access for
-  # nixos-anywhere to connect and kexec from.
+  # template once; cloud-init configures SSH access and starts the guest agent.
   initialization {
-    datastore_id = var.boot_datastore
-    interface    = "ide2"
+    datastore_id      = var.boot_datastore
+    interface         = "ide2"
+    user_data_file_id = proxmox_virtual_environment_file.cloud_init.id
     ip_config {
       ipv4 {
         address = var.ip_address

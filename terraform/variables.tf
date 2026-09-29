@@ -12,10 +12,16 @@ variable "proxmox_insecure" {
   default = false
 }
 
-variable "template_id" {
-  description = "ID of the shared base template created by image/build-base-template.sh"
-  type        = number
-  default     = 9000
+variable "bootstrap_iso_path" {
+  description = "Path to the ISO built by `nix build path:.#bootstrap-iso`."
+  type        = string
+  default     = "../result/iso/nixos-bootstrap.iso"
+}
+
+variable "iso_datastore" {
+  description = "Proxmox datastore with ISO image content enabled."
+  type        = string
+  default     = "local"
 }
 
 variable "nodes" {
@@ -25,11 +31,11 @@ variable "nodes" {
     vm_id            = number
     quicksync_pci_id = optional(string)
     nvidia_pci_id    = optional(string)
-    # Static IPv4 in CIDR form, e.g. "10.10.100.10/16" - must match this
-    # node's homelabNetwork.address in hosts/<name>/default.nix.
-    ip_address       = string
-    cores            = optional(number, 4)
-    memory_mb        = optional(number, 8192)
+    # Installed NixOS static IPv4 in CIDR form; must match this node's
+    # homelabNetwork.address in hosts/<name>/default.nix.
+    ip_address = string
+    cores      = optional(number, 4)
+    memory_mb  = optional(number, 8192)
     # Start small (see nixos-modules/longhorn-disk-alert.nix - the node
     # alerts at 80% used - and nixos-modules/longhorn-disk-grow.nix, which
     # auto-grows into whatever you bump this to).

@@ -48,6 +48,11 @@
           ]
           ++ extraModules;
         };
+
+      bootstrapIso = nixpkgs.lib.nixosSystem {
+        inherit system;
+        modules = [ ./image/bootstrap-iso.nix ];
+      };
     in
     {
       # Plain NixOS configs, used by nixos-anywhere for first install
@@ -55,6 +60,7 @@
       # `nixos-rebuild --flake .#<hostName>` if you ever want to run that
       # directly against a node instead of going through Colmena.
       nixosConfigurations = {
+        bootstrap-iso = bootstrapIso;
         k8s-node-1 = mkHost "k8s-node-1" [ ];
         k8s-node-2 = mkHost "k8s-node-2" [ ];
         k8s-node-3 = mkHost "k8s-node-3" [ ];
@@ -89,20 +95,23 @@
         };
       };
 
-      packages.${system}.default = pkgs.buildEnv {
-        name = "homelab-k8s-devshell";
-        paths = [
-          pkgs.opentofu
-          colmena.packages.${system}.colmena
-          nixos-anywhere.packages.${system}.default
-          pkgs.sops
-          pkgs.age
-          pkgs.ssh-to-age
-          pkgs.kubectl
-          pkgs.kubernetes-helm
-          pkgs.jq
-          pkgs.openssh
-        ];
+      packages.${system} = {
+        bootstrap-iso = bootstrapIso.config.system.build.isoImage;
+        default = pkgs.buildEnv {
+          name = "homelab-k8s-devshell";
+          paths = [
+            pkgs.opentofu
+            colmena.packages.${system}.colmena
+            nixos-anywhere.packages.${system}.default
+            pkgs.sops
+            pkgs.age
+            pkgs.ssh-to-age
+            pkgs.kubectl
+            pkgs.kubernetes-helm
+            pkgs.jq
+            pkgs.openssh
+          ];
+        };
       };
 
       devShells.${system}.default = pkgs.mkShell {

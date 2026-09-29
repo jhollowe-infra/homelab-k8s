@@ -4,8 +4,6 @@ proxmox_endpoint  = "https://pve1.lan:8006/"
 proxmox_api_token = "terraform@pve!homelab-k8s=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
 proxmox_insecure  = true # true if using Proxmox's self-signed cert
 
-template_id = 9000 # from image/build-base-template.sh output
-
 # quicksync_pci_id / nvidia_pci_id are both optional - leave unset for
 # nodes with no PCI passthrough. When used, find the PCI ID by running
 # `lspci -nn` on that physical Proxmox host (not in a VM). The iGPU is

@@ -1,6 +1,5 @@
-# One k8s node VM: cloned from the shared base template (image/build-base-template.sh),
-# with a 2nd disk for Longhorn and PCI passthrough for the iGPU (every node)
-# and optionally a discrete NVIDIA GPU.
+# One k8s node VM: boots a NixOS installer ISO, with a 2nd disk for Longhorn
+# and PCI passthrough for the iGPU (every node) and optionally a discrete NVIDIA GPU.
 #
 # bpg/proxmox resource/argument names below verified against the provider
 # source (proxmoxtf/resource/vm/vm.go, disk/schema.go) and
@@ -20,16 +19,17 @@ resource "proxmox_virtual_environment_vm" "this" {
   node_name = var.proxmox_node
   vm_id     = var.vm_id
 
-  machine = "q35" # required for PCIe passthrough
-  bios    = "ovmf"
+  machine    = "q35" # required for PCIe passthrough
+  bios       = "ovmf"
+  boot_order = ["scsi0", "ide2"]
 
   agent {
     enabled = true
   }
 
-  clone {
-    vm_id = var.template_id
-    full  = true
+  cdrom {
+    file_id   = proxmox_virtual_environment_file.bootstrap_iso.id
+    interface = "ide2"
   }
 
   cpu {
@@ -92,25 +92,22 @@ resource "proxmox_virtual_environment_vm" "this" {
     }
   }
 
-  # NixOS is installed by nixos-anywhere after this VM boots the cloned
-  # template once; Proxmox cloud-init here just gets us SSH access for
-  # nixos-anywhere to connect and kexec from.
-  initialization {
-    datastore_id = var.boot_datastore
-    interface    = "ide2"
-    ip_config {
-      ipv4 {
-        address = var.ip_address
-        gateway = var.gateway
-      }
-    }
-  }
-
   lifecycle {
     ignore_changes = [
       network_device[0].mac_address,
-      initialization,
     ]
+  }
+}
+
+resource "proxmox_virtual_environment_file" "bootstrap_iso" {
+  content_type = "iso"
+  datastore_id = var.iso_datastore
+  node_name    = var.proxmox_node
+
+  source_file {
+    path      = var.bootstrap_iso_path
+    file_name = "nixos-bootstrap.iso"
+    # file_name = "${var.hostname}-bootstrap.iso"
   }
 }
 

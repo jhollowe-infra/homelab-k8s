@@ -11,8 +11,12 @@ variable "vm_id" {
   type = number
 }
 
-variable "template_id" {
-  type = number
+variable "bootstrap_iso_path" {
+  type = string
+}
+
+variable "iso_datastore" {
+  type = string
 }
 
 variable "cores" {
@@ -56,17 +60,6 @@ variable "vlan_id" {
   description = "VLAN tag for the node's network_device (VLAN 100, the servers VLAN)."
   type        = number
   default     = 100
-}
-
-variable "ip_address" {
-  description = "This node's static IPv4 address in CIDR form, e.g. \"10.10.100.10/16\". Matches homelabNetwork.address in the corresponding hosts/<name>/default.nix, so the IP is identical before and after the nixos-anywhere install."
-  type        = string
-}
-
-variable "gateway" {
-  description = "Default gateway for the node's VLAN."
-  type        = string
-  default     = "10.10.0.1"
 }
 
 variable "quicksync_pci_id" {

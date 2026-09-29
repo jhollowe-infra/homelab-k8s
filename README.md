@@ -6,7 +6,7 @@ Declarative kubernetes configuration running k3s on NixOS; made with the help of
 
 Declarative configuration and tooling for a 3-node k3s Kubernetes cluster
 running on NixOS VMs on Proxmox. **App deployment (GitOps) lives in a
-separate repo** — this repo only covers: the Proxmox VM template, the VMs
+separate repo** — this repo only covers: the Proxmox bootstrap ISO, the VMs
 themselves, the NixOS/k3s node configuration, and the storage
 infrastructure (Longhorn, TrueNAS CSI) the cluster itself depends on.
 
@@ -43,14 +43,13 @@ Three tiers, matched to what actually needs to be fast vs. cheap vs. bulk:
 
 A media server (e.g. Jellyfin) app or notes app (e.g. Nextcloud) would mount tier 2 for its database/config PVC and tier 3 for the media library/content PVC.
 
-## Why no custom Proxmox VM template build
+## NixOS bootstrap ISO
 
-`nixos-anywhere` installs NixOS onto **any** running Linux over SSH (it
-kexecs a NixOS installer in place), so the VMs start from a generic minimal
-cloud image rather than a purpose-built template. Since the 3 Proxmox hosts
-share one cluster/storage, `image/build-base-template.sh` only needs to run
-**once**, from any single host — every node's VM clones that same template
-regardless of which physical host it lands on.
+Terraform uploads the NixOS live ISO to each Proxmox node's ISO datastore
+using the Proxmox API, then creates blank-disk VMs that boot from it. The ISO
+uses DHCP and runs the QEMU guest agent, so Terraform reports each live
+installer's address for `nixos-anywhere`. The installed host configuration
+then switches to the node's static address.
 
 ## Layout
 
@@ -69,9 +68,10 @@ nixos-modules/
   longhorn-disk-grow.nix   Longhorn disk auto-grow (partition + filesystem)
   longhorn-disk-alert.nix  Discord alert when Longhorn disk usage crosses 80%
 image/
-  build-base-template.sh  one-time: creates the shared Proxmox VM template
+  bootstrap-iso.nix       NixOS live ISO used to create and bootstrap VMs
+  build-base-template.sh  legacy template builder; not used by Terraform
 terraform/
-  modules/vm/             one k8s node VM: clone template, 2 disks, hostpci
+  modules/vm/             one k8s node VM: blank disks, ISO boot, hostpci
   *.tf, terraform.tfvars.example
 cluster-bootstrap/
   longhorn-values.yaml               Helm values for the fast-local tier
@@ -105,10 +105,17 @@ scripts/
    (`lspci -nn` on each physical host — the iGPU and, on the node with the
    P620, its PCI address too).
 
-5. Build the shared Proxmox VM template (once, from any one host):
+5. Build the NixOS bootstrap ISO before creating the VMs:
    ```
-   PVE_HOST=pve1.lan ./image/build-base-template.sh
+  nix build path:.#bootstrap-iso
    ```
+  This creates a `result` symlink to a hash-prefixed Nix store path ending
+  in `nixos-bootstrap.iso`. Terraform uploads it to the configured
+  `iso_datastore` (default `local`) on each target node. The datastore must
+  allow ISO images. The live ISO gets its address via DHCP
+  and reports it through QEMU guest agent. Its temporary SSH login is
+  `root` / `nixos`; keep the bootstrap network isolated and do not reuse this
+  password.
 
 6. Create the VMs:
    ```
@@ -120,6 +127,8 @@ scripts/
    ```
    ./scripts/bootstrap-cluster.sh
    ```
+  The script uses each VM's DHCP address for the installer, then the
+  configured static address for the installed cluster's kubeconfig.
 
 8. Install the storage layer:
    ```

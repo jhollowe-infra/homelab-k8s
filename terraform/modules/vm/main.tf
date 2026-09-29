@@ -53,6 +53,7 @@ resource "proxmox_virtual_environment_vm" "this" {
     size         = var.boot_disk_gb
     iothread     = true
     discard      = "on"
+    ssd          = true
   }
 
   disk {
@@ -61,6 +62,7 @@ resource "proxmox_virtual_environment_vm" "this" {
     size         = var.longhorn_disk_gb
     iothread     = true
     discard      = "on"
+    ssd          = true
   }
 
   network_device {
@@ -102,6 +104,8 @@ resource "proxmox_virtual_environment_vm" "this" {
         gateway = var.gateway
       }
     }
+    user = "root"
+    password = "temp_password"
   }
 
   lifecycle {

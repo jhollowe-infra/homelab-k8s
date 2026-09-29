@@ -1,5 +1,8 @@
 module "node" {
   source = "./modules/vm"
+  providers = {
+    proxmox = proxmox
+  }
 
   for_each = var.nodes
 

@@ -7,6 +7,14 @@
 # docs/resources/virtual_environment_vm.md: `machine = "q35"` is required for
 # PCIe passthrough (hostpci.pcie is only honored on q35), and
 # `discard = "on"` is a valid disk enum value (`on`/`ignore`).
+terraform {
+  required_providers {
+    proxmox = {
+      source = "bpg/proxmox"
+    }
+  }
+}
+
 resource "proxmox_virtual_environment_vm" "this" {
   name      = var.hostname
   node_name = var.proxmox_node

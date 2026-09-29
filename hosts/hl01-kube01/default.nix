@@ -2,7 +2,7 @@
 {
   networking.hostName = "hl01-kube01";
 
-  homelabNetwork.address = "10.10.100.10/16";
+  homelabNetwork.address = "10.10.100.11/16";
 
   # First node: initializes the k3s/etcd cluster.
   homelabK3s = {

@@ -2,7 +2,7 @@
 {
   networking.hostName = "hl01-kube02";
 
-  homelabNetwork.address = "10.10.100.11/16";
+  homelabNetwork.address = "10.10.100.12/16";
 
   homelabK3s = {
     # enable = true;

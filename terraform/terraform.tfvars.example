@@ -18,16 +18,16 @@ nodes = {
   hl01-kube01 = {
     proxmox_node = "pve1"
     vm_id        = 101
-    ip_address   = "10.10.100.10/16"
+    ip_address   = "10.10.100.11/16"
   }
   hl01-kube02 = {
     proxmox_node = "pve2"
     vm_id        = 102
-    ip_address   = "10.10.100.11/16"
+    ip_address   = "10.10.100.12/16"
   }
   hl01-kube03 = {
     proxmox_node = "pve3"
     vm_id        = 103
-    ip_address   = "10.10.100.12/16"
+    ip_address   = "10.10.100.13/16"
   }
 }

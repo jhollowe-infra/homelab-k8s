@@ -15,7 +15,7 @@ in
   options.homelabNetwork = {
     address = lib.mkOption {
       type = lib.types.str;
-      description = ''This node's static IPv4 address in CIDR form, e.g. "10.10.100.10/16".'';
+      description = ''This node's static IPv4 address in CIDR form, e.g. "10.10.100.11/16".'';
     };
     gateway = lib.mkOption {
       type = lib.types.str;

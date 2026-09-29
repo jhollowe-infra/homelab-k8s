@@ -9,7 +9,9 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 for host in hl01-kube01 hl01-kube02 hl01-kube03; do
-  ip="$(tofu -chdir=terraform output -json node_ips | jq -r ".\"${host}\"[0][0]")"
+  # get the DHCP IP the bootstrap image got (not loopback IP)
+  ip="$(tofu -chdir=terraform output -json node_ips \
+    | jq -er --arg host "$host" 'first(.[$host][][] | select(. != "127.0.0.1"))')"
   echo "==> Installing NixOS on ${host} (${ip})"
   SSHPASS=nixos nixos-anywhere --env-password --flake ".#${host}" "root@${ip}"
 done

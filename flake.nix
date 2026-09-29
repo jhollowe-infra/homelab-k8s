@@ -19,6 +19,10 @@
       url = "github:nix-community/nixos-anywhere";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    nixos-common = {
+      url = "github:jhollowe-infra/nixos-common";
+      flake = false;
+    };
   };
 
   outputs =
@@ -29,11 +33,21 @@
       colmena,
       sops-nix,
       nixos-anywhere,
+      nixos-common,
       ...
     }:
     let
       system = "x86_64-linux";
       pkgs = import nixpkgs { inherit system; };
+      nixosCommonModules = map (module: nixos-common + module) [
+        "/env/qemu.nix"
+        "/fs/swapfile.nix"
+        "/env/ny_time.nix"
+        "/env/en_us_utf8.nix"
+        "/net/default.nix"
+        "/workloads/ssh.nix"
+        "/workloads/flakes.nix"
+      ];
 
       mkHost =
         hostName: extraModules:
@@ -46,6 +60,7 @@
             ./hosts/common
             ./hosts/${hostName}
           ]
+          ++ nixosCommonModules
           ++ extraModules;
         };
 
@@ -71,7 +86,7 @@
       colmenaHive = colmena.lib.makeHive self.outputs.colmena;
       colmena = {
         meta = {
-          inherit nixpkgs;
+          nixpkgs = pkgs;
           specialArgs = { inherit self; };
         };
         defaults = { ... }: {
@@ -79,7 +94,8 @@
             disko.nixosModules.disko
             sops-nix.nixosModules.sops
             ./hosts/common
-          ];
+          ]
+          ++ nixosCommonModules;
         };
         hl01-kube01 = { ... }: {
           deployment.targetHost = "hl01-kube01.kube-nodes.johnhollowell.internal";

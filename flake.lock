@@ -168,6 +168,22 @@
         "type": "github"
       }
     },
+    "nixos-common": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1723696011,
+        "narHash": "sha256-0qZpoHfSYQTk0VZfl7FpBpS3fub81NaX8KoY6fMu0sc=",
+        "owner": "jhollowe-infra",
+        "repo": "nixos-common",
+        "rev": "5a64ff89e68de9f089395a01b97733c293431658",
+        "type": "github"
+      },
+      "original": {
+        "owner": "jhollowe-infra",
+        "repo": "nixos-common",
+        "type": "github"
+      }
+    },
     "nixos-images": {
       "inputs": {
         "nixos-stable": [
@@ -230,6 +246,7 @@
         "colmena": "colmena",
         "disko": "disko",
         "nixos-anywhere": "nixos-anywhere",
+        "nixos-common": "nixos-common",
         "nixpkgs": "nixpkgs",
         "sops-nix": "sops-nix"
       }

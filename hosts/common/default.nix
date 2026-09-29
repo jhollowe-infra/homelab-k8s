@@ -1,5 +1,5 @@
 # Config shared by every k8s node.
-{ pkgs, ... }:
+{ lib, pkgs, ... }:
 {
   imports = [
     ./disko.nix
@@ -44,23 +44,16 @@
   networking.firewall.enable = true;
   networking.firewall.allowedTCPPorts = [ 22 ];
 
-  services.openssh = {
-    enable = true;
-    settings.PasswordAuthentication = false;
-  };
+  # Colmena connects as root; require keys without disabling that access.
+  services.openssh.settings.PermitRootLogin = lib.mkForce "prohibit-password";
 
   users.users.root.openssh.authorizedKeys.keys = [
     "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILjyoZakOhGPmzJx3zH8vEizvfMbM5Aa8iTuP5VAk+QK 3:jhollowe@JOHN-DESKTOP.internal.johnhollowell.com"
     "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDr9lnRhfAPce+yYxNMIL9EWa7dOl2u0vjq5qVM5P17i jhollowe@JOHN-LAPTOP.internal.johnhollowell.com"
+    "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINg+ewr3Rbc971d1rr0Cb1rzMDTMaJu0GV/s05YAIHf5 vscode@96677b504e2f"
   ];
 
   environment.systemPackages = with pkgs; [
-    vim
-    git
-  ];
-
-  nix.settings.experimental-features = [
-    "nix-command"
-    "flakes"
+    btop
   ];
 }

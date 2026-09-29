@@ -18,7 +18,8 @@ done
 
 echo "==> Fetching kubeconfig from hl01-kube01"
 node1_ip="$(tofu -chdir=terraform output -json node_installed_ips | jq -er '."hl01-kube01" | split("/")[0]')"
-ssh "root@${node1_ip}" cat /etc/rancher/k3s/k3s.yaml \
+ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
+    "root@${node1_ip}" cat /etc/rancher/k3s/k3s.yaml \
   | sed "s|127.0.0.1|${node1_ip}|" > kubeconfig
 chmod 600 kubeconfig
 

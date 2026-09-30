@@ -8,7 +8,7 @@
     # enable = true;
     role = "server";
     clusterInit = false;
-    serverAddr = "https://hl01-kube01.kube-nodes.johnhollowell.internal:6443";
+    serverAddr = "https://k8s-api-vip.kube-nodes.johnhollowell.internal:6443";
   };
 
   # Staggered 2h after node-1, so node-1's homelab-auto-upgrade rollback

@@ -126,12 +126,14 @@
             pkgs.kubernetes-helm
             pkgs.jq
             pkgs.openssh
+
+            pkgs.dig
           ];
         };
       };
 
       devShells.${system}.default = pkgs.mkShell {
-        packages = self.packages.${system}.default;
+        packages = [ self.packages.${system}.default ];
         shellHook = ''
           echo "homelab-k8s dev shell: tofu, colmena, nixos-anywhere, sops, age, kubectl, helm available."
         '';

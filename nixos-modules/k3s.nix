@@ -42,6 +42,11 @@ in
       default = null;
       description = "https://<first-node>:6443 - set on every node except the bootstrap node.";
     };
+    tlsSan = lib.mkOption {
+      type = lib.types.listOf lib.types.str;
+      default = [ ];
+      description = "Additional subject alternative names for the k3s API server certificate.";
+    };
     nodeLabels = lib.mkOption {
       type = lib.types.attrsOf lib.types.str;
       default = { };
@@ -84,6 +89,7 @@ in
           "--disable=traefik"
           "--disable=servicelb"
         ]
+        ++ (map (san: "--tls-san=${san}") cfg.tlsSan)
         ++ (lib.mapAttrsToList (k: v: "--node-label=${k}=${v}") cfg.nodeLabels)
       );
     };

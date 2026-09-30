@@ -4,6 +4,7 @@
   imports = [
     ./disko.nix
     ../../nixos-modules/k3s.nix
+    ../../nixos-modules/kube-vip.nix
     ../../nixos-modules/network.nix
     ../../nixos-modules/auto-upgrade.nix
     # ../../nixos-modules/longhorn-disk-grow.nix
@@ -19,8 +20,8 @@
   ];
 
   # Combined with each host's `networking.hostName`, gives FQDNs like
-  # hl01-kube01.kube-nodes.johnhollowell.internal - used below (flake.nix
-  # Colmena targetHost, homelabK3s.serverAddr).
+  # hl01-kube01.kube-nodes.johnhollowell.internal - used by flake.nix
+  # Colmena deployment.targetHost; joining nodes use the API VIP instead.
   networking.domain = "kube-nodes.johnhollowell.internal";
 
   boot.loader.grub = {

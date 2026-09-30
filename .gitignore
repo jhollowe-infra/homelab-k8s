@@ -20,3 +20,5 @@ kubeconfig
 # Nix
 result
 result-*
+
+id_ed25519

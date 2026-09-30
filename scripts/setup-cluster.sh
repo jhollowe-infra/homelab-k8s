@@ -16,11 +16,12 @@ SOPS_AGE_KEY_FILE="$(pwd)/age-key.txt" sops -d secrets/truenas-driver-config.sop
 
 echo "==> Fetching kubeconfig from hl01-kube01"
 node1_ip="$(tofu -chdir=terraform output -json node_installed_ips | jq -er '."hl01-kube01" | split("/")[0]')"
+api_vip_hostname="k8s-api-vip.kube-nodes.johnhollowell.internal"
 kubeconfig_tmp="$(mktemp "$(pwd)/.kubeconfig.XXXXXX")"
 trap 'rm -f "$kubeconfig_tmp"' EXIT
 ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
     "root@${node1_ip}" cat /etc/rancher/k3s/k3s.yaml \
-  | sed "s|127.0.0.1|${node1_ip}|" > "$kubeconfig_tmp"
+  | sed "s|127.0.0.1|${api_vip_hostname}|" > "$kubeconfig_tmp"
 chmod 600 "$kubeconfig_tmp"
 mv "$kubeconfig_tmp" kubeconfig
 trap - EXIT

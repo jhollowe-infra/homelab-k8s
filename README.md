@@ -62,6 +62,7 @@ hosts/
   k8s-node-{1,2,3}/      per-node config (hostname, cluster-init, GPU imports)
 nixos-modules/
   k3s.nix                k3s server role + sops-nix token + node labels
+  kube-vip.nix           API server VIP via kube-vip static pods
   gpu-intel-quicksync.nix  VA-API config for the iGPU (imported by all nodes)
   gpu-nvidia.nix           NVIDIA driver/containerd config (opt-in per node)
   auto-upgrade.nix         pull-based self-update, health-checked w/ rollback
@@ -128,6 +129,10 @@ scripts/
    tofu -chdir=terraform init
    tofu -chdir=terraform apply
    ```
+
+Add a LAN DNS A record for `k8s-api-vip.kube-nodes.johnhollowell.internal`
+pointing to `10.10.100.10` before installing the nodes. Reserve that address
+outside the DHCP pool.
 
 7. Install NixOS on all 3:
    ```

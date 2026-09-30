@@ -126,76 +126,47 @@ a search summary):
   service LB — described as the most frequently recommended combo; (B)
   kube-vip doing both jobs, for a simpler single-tool setup; (C)
   MetalLB-only, when there's no multi-control-plane HA need.
-- **This matters for us specifically**: our 3-node k3s setup already has
-  embedded HA etcd across all 3 nodes (per `nixos-modules/k3s.nix`), but
-  there's currently no VIP for the *API server* itself — clients
-  (`colmena`, `kubectl`, `serverAddr` on joining nodes) hit a specific
-  node's IP (`hl01-kube01.kube-nodes.johnhollowell.internal:6443`, see
-  `hosts/hl01-kube02/default.nix` and `hosts/hl01-kube03/default.nix`).
-  That's a separate, narrower problem from "get internet traffic to
-  Services" (this note's actual ask), but worth flagging as related: if
-  API-server HA (surviving node-1 specifically going down) ever becomes a
-  real want, kube-vip's control-plane mode is the tool for that, run
-  alongside MetalLB for Services — not instead of it. Not in scope to
-  implement alongside the internet-ingress work above; solution sketched
-  below since it's a self-contained, separately-implementable piece.
+- **This matters for us specifically**: the 3-node k3s cluster has
+  embedded HA etcd and now uses kube-vip for its API-server VIP at
+  `10.10.100.10`. This is separate from the internet-ingress work below;
+  kube-vip handles API access/failover, while the recommended MetalLB
+  installation will handle external Service VIPs.
 
-### 1a. Solution sketch: kube-vip control-plane VIP for the API server
+### 1a. Implemented: kube-vip control-plane VIP for the API server
 
 Decided so far: the VIP gets the hostname
 **`k8s-api-vip.kube-nodes.johnhollowell.internal`** (matching the
-`kube-nodes.johnhollowell.internal` node-naming scheme). **The actual IP
-address is not yet decided** — needs to be a free LAN IP outside DHCP's
-range and outside whatever pool MetalLB ends up using (section 1 above),
-picked when this is actually implemented.
+`kube-nodes.johnhollowell.internal` node-naming scheme) and address
+**`10.10.100.10`**. Reserve the address outside DHCP's range and any
+MetalLB pool; add a LAN DNS A record for the hostname.
 
-Shape of the change, as a **separate NixOS module**
-(`nixos-modules/kube-vip.nix`, imported opt-in-or-always from
-`hosts/common/default.nix` alongside `k3s.nix` — parallel to how
-`gpu-nvidia.nix` is opt-in per node, but this one would apply to all 3
-server nodes identically):
+Implemented as a **separate NixOS module**
+(`nixos-modules/kube-vip.nix`) imported by `hosts/common/default.nix` and
+enabled on all 3 server nodes:
 
-1. Drop a kube-vip static pod manifest onto every server node at
-   `/var/lib/rancher/k3s/agent/pod-manifests/kube-vip.yaml` (NixOS:
-   `environment.etc."rancher/k3s/agent/pod-manifests/kube-vip.yaml".text`),
-   ARP/L2 mode (matches the L2-mode MetalLB recommendation above — no BGP
-   needed for this either), targeting the not-yet-chosen VIP IP, with
-   `cp_enable: true`/`vip_leaderelection: true` so kube-vip pods on the 3
-   nodes elect which one currently answers ARP for the VIP.
-   NOTE: manifest shape (`vip_arp`, `cp_enable`, `vip_leaderelection`,
-   etc. env vars, the `/etc/kubernetes/admin.conf` -> host's
-   `/etc/rancher/k3s/k3s.yaml` volume mount, image tag) is from a
-   web-search-summarized community guide, not a direct fetch of
-   kube-vip's own docs — verify against
-   https://kube-vip.io/docs/installation/k3s/ and the actual current
-   image tag before implementing.
-2. Add a new `homelabK3s.tlsSan` (or similarly-named) list option to
-   `nixos-modules/k3s.nix`, wired into `services.k3s.extraFlags` as
-   `--tls-san=<value>` per entry. The kube-vip module sets this to
-   `[ "k8s-api-vip.kube-nodes.johnhollowell.internal" "<the VIP IP>" ]` so
-   the k3s-generated API server cert is valid for the VIP, not just each
-   node's own hostname — clients hitting the VIP would otherwise fail TLS
-   verification. This is the one change that touches an *existing* file
-   rather than being fully additive.
-3. Change `serverAddr` in `hosts/hl01-kube02/default.nix` and
+1. The module materializes a kube-vip static pod manifest at
+  `/var/lib/rancher/k3s/agent/pod-manifests/kube-vip.yaml` in ARP/L2 mode.
+  A one-shot systemd unit discovers the LAN interface from the node's
+  default-gateway route before k3s starts, avoiding a hard-coded NIC name.
+  The manifest uses `cp_enable: true` and `vip_leaderelection: true` and
+  mounts the host's `/etc/rancher/k3s/k3s.yaml` at
+  `/etc/kubernetes/admin.conf`. The image is pinned to kube-vip v1.2.4.
+2. `nixos-modules/k3s.nix` provides `homelabK3s.tlsSan`, wired to repeated
+  `--tls-san=<value>` flags. The kube-vip module sets the VIP hostname and
+  `10.10.100.10` on all server nodes so API TLS verification succeeds.
+3. `serverAddr` in `hosts/hl01-kube02/default.nix` and
    `hosts/hl01-kube03/default.nix` from
-   `https://hl01-kube01.kube-nodes.johnhollowell.internal:6443` to
-   `https://k8s-api-vip.kube-nodes.johnhollowell.internal:6443`.
+  `https://hl01-kube01.kube-nodes.johnhollowell.internal:6443` to
+  `https://k8s-api-vip.kube-nodes.johnhollowell.internal:6443`. Both
+  joining nodes have k3s enabled so they can participate in failover.
    Bootstrapping order note: node-1 (`clusterInit = true`) still comes up
    first and is briefly the sole holder of the VIP; nodes 2/3 join via the
    VIP once their own kube-vip static pods are up too.
-4. Update anywhere else currently hardcoding `hl01-kube01` for API access —
-    `scripts/setup-cluster.sh`'s kubeconfig-fetch/rewrite step in
-   particular — to use the VIP hostname instead (`flake.nix`'s Colmena
-   `deployment.targetHost` stays per-node since that's SSH for config
-   deploys, not API-server traffic, and is intentionally unrelated to
-   this).
-5. DNS: `k8s-api-vip.kube-nodes.johnhollowell.internal` needs to actually
-   resolve to the chosen VIP wherever this repo's other
-   `kube-nodes.johnhollowell.internal` names are resolved (not yet
-   specified elsewhere in this repo how that resolution works — split-DNS/
-   local DNS server entry, presumably the same mechanism already used for
-   `k8s-node-{1,2,3}.kube-nodes.johnhollowell.internal`).
+4. `scripts/setup-cluster.sh` rewrites the fetched kubeconfig to use the
+  VIP hostname. Colmena's `deployment.targetHost` remains per-node because
+  it is the SSH destination for configuration deployment.
+5. README setup instructions require the LAN DNS A record to point the VIP
+  hostname to `10.10.100.10`.
 
 Tradeoffs: one more static pod per server node to keep healthy; ARP-mode
 failover has a brief (seconds) gap during leader transition, same class of
@@ -338,13 +309,8 @@ fine with MetalLB (different job), just needs a non-overlapping IP.
   deciding based on how the future app-deployment repo will express
   routing, since that repo is where individual app `Ingress`/`HTTPRoute`
   objects will actually live.
-- Does API-server HA (kube-vip control-plane VIP, see section 1a for the
-  sketched solution — hostname decided, IP not yet) matter enough to
-  implement alongside this ingress work, or as its own separate,
-  earlier/later piece of work? They're independent enough to do in either
-  order.
-- What actual VIP IP to give `k8s-api-vip.kube-nodes.johnhollowell.internal`
-  (section 1a) — needs to avoid DHCP's range and MetalLB's pool.
+- The kube-vip API-server VIP is configured at `10.10.100.10`; confirm
+  that it is reserved outside DHCP's range and any future MetalLB pool.
 - How is `*.kube-nodes.johnhollowell.internal` resolved today (for the
   existing node hostnames) — the VIP hostname needs the same treatment.
 - Which DNS provider hosts the relevant domain, and does its API support

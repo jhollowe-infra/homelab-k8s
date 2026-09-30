@@ -61,6 +61,8 @@ in
     networking.firewall.allowedTCPPorts = [
       6443 # k8s API
       10250 # kublet API
+      2379 # embedded etcd client
+      2380 # embedded etcd peer
     ];
     networking.firewall.allowedUDPPorts = [
       8472 # VXLAN

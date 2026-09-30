@@ -7,7 +7,7 @@ none of it gets silently assumed-working just because `nix flake check` /
 `tofu validate` pass. Checklist form: check each off with the real result
 (pass, or what broke) once tried, don't just delete the line.
 
-## First bootstrap (`scripts/bootstrap-cluster.sh`)
+## First bootstrap (`scripts/bootstrap-nodes.sh` and `scripts/setup-cluster.sh`)
 
 - [ ] `tofu apply` actually creates all 3 VMs cleanly from the base template
       (`image/build-base-template.sh` output) with the right disks/NIC/CPU.
@@ -23,7 +23,7 @@ none of it gets silently assumed-working just because `nix flake check` /
       actually matches interfaces via the `en*` glob on real hardware NICs
       (not just VM virtio) - confirm no double-match if a GPU or other
       passthrough device ever presents as a network-ish device.
-- [ ] `scripts/bootstrap-cluster.sh`'s kubeconfig extraction/IP substitution
+- [ ] `scripts/setup-cluster.sh`'s kubeconfig extraction/IP substitution
       (`sed s/127.0.0.1/.../`) produces a kubeconfig that actually works from
       outside the node.
 

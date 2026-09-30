@@ -185,7 +185,7 @@ server nodes identically):
    first and is briefly the sole holder of the VIP; nodes 2/3 join via the
    VIP once their own kube-vip static pods are up too.
 4. Update anywhere else currently hardcoding `hl01-kube01` for API access —
-   `scripts/bootstrap-cluster.sh`'s kubeconfig-fetch/rewrite step in
+    `scripts/setup-cluster.sh`'s kubeconfig-fetch/rewrite step in
    particular — to use the VIP hostname instead (`flake.nix`'s Colmena
    `deployment.targetHost` stays per-node since that's SSH for config
    deploys, not API-server traffic, and is intentionally unrelated to

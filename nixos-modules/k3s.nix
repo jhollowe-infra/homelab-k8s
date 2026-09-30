@@ -61,7 +61,7 @@ in
       8472 # VXLAN
     ];
 
-    # k3s join token: generated once (scripts/bootstrap-cluster.sh) and
+    # k3s join token: generated once (scripts/bootstrap-nodes.sh) and
     # stored encrypted via sops-nix, decrypted to this path at activation.
     sops.secrets.k3s-token = {
       sopsFile = ../secrets/secrets.sops.yaml;
@@ -90,7 +90,6 @@ in
 
     # Longhorn's prerequisites: iscsi + nfs client utils, open-iscsi running.
     environment.systemPackages = with pkgs; [
-      open-iscsi
       nfs-utils
       cryptsetup
     ];

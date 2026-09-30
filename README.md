@@ -79,7 +79,8 @@ cluster-bootstrap/
 secrets/
   *.sops.yaml.example     templates — copy, fill in, then `sops -e -i`
 scripts/
-  bootstrap-cluster.sh     first-time: nixos-anywhere on all 3 nodes
+  bootstrap-nodes.sh       first-time: nixos-anywhere on all 3 nodes
+  setup-cluster.sh         fetch kubeconfig and install Longhorn + democratic-csi
   add-node.sh              add a node after initial bootstrap
 ```
 
@@ -128,15 +129,14 @@ scripts/
    tofu -chdir=terraform apply
    ```
 
-7. Install NixOS on all 3 and bootstrap the cluster:
+7. Install NixOS on all 3:
    ```
-   ./scripts/bootstrap-cluster.sh
+  ./scripts/bootstrap-nodes.sh
    ```
-  The script uses each VM's DHCP address for the installer, then the
-  configured static address for the installed cluster's kubeconfig.
-  It also provisions the local age key so sops-nix can create the k3s token
-  before k3s starts. Do not rerun this destructive install script on nodes
-  that already contain data.
+  The script uses each VM's DHCP address for the installer and provisions
+  the local age key so sops-nix can create the k3s token before k3s starts.
+  Do not rerun this destructive install script on nodes that already contain
+  data.
 
 If a node is already installed but is missing `/var/lib/sops-nix/key.txt`,
 copy the private key to that node over SSH and retry the deployment. Run this
@@ -148,19 +148,13 @@ ssh "root@$node.kube-nodes.johnhollowell.internal" 'install -d -m 0755 /var/lib/
 colmena apply --on "$node"
 ```
 
-8. Install the storage layer:
+8. Fetch the kubeconfig and install the storage layer:
    ```
-   export KUBECONFIG=$(pwd)/kubeconfig
-   helm repo add longhorn https://charts.longhorn.io
-   helm repo add democratic-csi https://democratic-csi.github.io/charts/
-   helm repo update
-   helm install longhorn longhorn/longhorn -n longhorn-system --create-namespace \
-     -f cluster-bootstrap/longhorn-values.yaml
-   kubectl create namespace democratic-csi
-   kubectl apply -f <(sops -d secrets/truenas-driver-config.sops.yaml) -n democratic-csi
-   helm install truenas-nfs democratic-csi/democratic-csi -n democratic-csi \
-     -f cluster-bootstrap/democratic-csi-truenas-values.yaml
+   ./scripts/setup-cluster.sh
    ```
+  This writes `kubeconfig` in the repository root and installs or upgrades
+  Longhorn and democratic-csi. It requires the encrypted
+  `secrets/truenas-driver-config.sops.yaml` file.
 
 Your app-deployment repo (Flux/ArgoCD, when you get to it) points at this
 cluster's kubeconfig from here on; it doesn't need anything else from this

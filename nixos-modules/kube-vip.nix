@@ -56,6 +56,10 @@ let
               mountPath: /etc/kubernetes/admin.conf
               readOnly: true
       hostNetwork: true
+      hostAliases:
+        - ip: 127.0.0.1
+          hostnames:
+            - kubernetes
       volumes:
         - name: kubeconfig
           hostPath:
@@ -74,6 +78,7 @@ in
 
     systemd.services.kube-vip-manifest = {
       description = "Generate kube-vip static pod manifest";
+      restartTriggers = [ manifest ];
       before = [ "k3s.service" ];
       requiredBy = [ "k3s.service" ];
       after = [ "systemd-networkd.service" ];

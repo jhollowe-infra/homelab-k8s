@@ -90,6 +90,7 @@ in
 
     # Longhorn's prerequisites: iscsi + nfs client utils, open-iscsi running.
     environment.systemPackages = with pkgs; [
+      openiscsi
       nfs-utils
       cryptsetup
     ];

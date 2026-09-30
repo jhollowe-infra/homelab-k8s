@@ -29,7 +29,8 @@
 		}
 	},
 	"containerEnv": {
-		"SOPS_AGE_KEY_FILE": "/workspaces/homelab-k8s/age-key.txt"
+		"SOPS_AGE_KEY_FILE": "/workspaces/homelab-k8s/age-key.txt",
+		"KUBECONFIG": "/workspaces/homelab-k8s/kubeconfig"
 	},
 	// The first time the dev container runs, install the flake's packages
 	"postCreateCommand": "nix profile add .",

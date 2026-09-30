@@ -51,6 +51,7 @@
   users.users.root.openssh.authorizedKeys.keys = [
     "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILjyoZakOhGPmzJx3zH8vEizvfMbM5Aa8iTuP5VAk+QK 3:jhollowe@JOHN-DESKTOP.internal.johnhollowell.com"
     "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDr9lnRhfAPce+yYxNMIL9EWa7dOl2u0vjq5qVM5P17i jhollowe@JOHN-LAPTOP.internal.johnhollowell.com"
+    "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINMoimoUhX3j0F7br6+hjiLTJJQKcvwKKwCpgzYjNYpw vscode on laptop devcontainer"
   ];
 
   environment.systemPackages = with pkgs; [

@@ -41,3 +41,5 @@ driver:
   # References the Secret created from truenas-driver-config.sops.yaml,
   # instead of putting the API key/dataset path in this (unencrypted) file.
   existingConfigSecret: truenas-nfs-driver-config
+  config:
+    driver: freenas-api-nfs

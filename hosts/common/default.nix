@@ -55,9 +55,13 @@
   ];
 
   environment.systemPackages = with pkgs; [
-    openiscsi
+    openiscsi # used by longhorn
     btop
     iftop
     iotop
+  ];
+
+  systemd.tmpfiles.rules = [
+    "L+ /usr/bin/iscsiadm - - - - /run/current-system/sw/bin/iscsiadm"
   ];
 }

@@ -45,7 +45,7 @@
 let
   cfg = config.homelabAutoUpgrade;
   k3sEnabled = config.homelabK3s.enable;
-  flakeRef = "github:jhollowe/homelab-k8s";
+  flakeRef = "github:jhollowe-infra/homelab-k8s";
 
   clusterHealthFns = ''
     export KUBECONFIG=/etc/rancher/k3s/k3s.yaml

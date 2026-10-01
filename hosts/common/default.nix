@@ -55,6 +55,7 @@
   ];
 
   environment.systemPackages = with pkgs; [
+    openiscsi
     btop
     iftop
     iotop

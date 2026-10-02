@@ -55,7 +55,6 @@
   ];
 
   environment.systemPackages = with pkgs; [
-    openiscsi # used by longhorn
     btop
     iftop
     iotop

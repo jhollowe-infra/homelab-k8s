@@ -76,6 +76,10 @@ in
       mode = "0400";
     };
 
+    # this might be needed for NAS support?
+    # boot.supportedFilesystems = [ "nfs" ];
+    # services.rpcbind.enable = true;
+
     services.k3s = {
       enable = true;
       role = cfg.role;
@@ -98,14 +102,90 @@ in
 
     # Longhorn's prerequisites: iscsi + nfs client utils, open-iscsi running.
     environment.systemPackages = with pkgs; [
-      openiscsi
+      openiscsi # used by longhorn
       nfs-utils
       cryptsetup
     ];
+
+    # used by longhorn
     services.openiscsi = {
       enable = true;
-      # TODO make this unique per host
-      name = "iqn.2026-01.lan.homelab:initiator";
+      name = "${config.networking.hostName}-initiatorhost";
+    };
+
+    systemd.services.drain-k3s-on-shutdown = {
+      description = "Drain K3s node before shutdown";
+
+      # Ensure it runs AFTER k3s is fully operational during boot,
+      # which means systemd will stop it BEFORE k3s stops during shutdown.
+      after = [ "k3s.service" ];
+      requires = [ "k3s.service" ];
+      # Ensure this service stops before shutdown.target (i.e., during the
+      # normal service shutdown phase, not during the final "unmount everything"
+      # phase). Without this, DefaultDependencies=no breaks shutdown ordering.
+      before = [ "shutdown.target" ];
+
+      unitConfig = {
+        # Keep DefaultDependencies=no to avoid pulling in unnecessary deps,
+        # but we must explicitly order against shutdown.target
+        DefaultDependencies = "no";
+      };
+
+      serviceConfig = {
+        Type = "oneshot";
+        RemainAfterExit = true;
+
+        # Environment pointing to the default K3s kubeconfig location in NixOS
+        Environment = "KUBECONFIG=/etc/rancher/k3s/k3s.yaml";
+
+        # Do nothing on startup
+        ExecStart = "${pkgs.coreutils}/bin/true";
+
+        # The actual drain action triggered strictly on shutdown/reboot
+        ExecStop = ''
+          ${pkgs.k3s}/bin/kubectl drain %H \
+            --ignore-daemonsets \
+            --delete-emptydir-data \
+            --force \
+            --grace-period=60
+        '';
+        # TODO this drains the node, but containers are still left running after shutdown.service
+
+        # Give the drain command enough time to evict pods gracefully
+        TimeoutStopSec = 300;
+      };
+
+      wantedBy = [ "multi-user.target" ];
+    };
+
+    systemd.services.uncordon-k3s-on-startup = {
+      description = "Uncordon K3s node after API server is ready";
+
+      # Run after the k3s service has initialized
+      after = [ "k3s.service" ];
+      wants = [ "k3s.service" ];
+      wantedBy = [ "multi-user.target" ];
+
+      serviceConfig = {
+        Type = "oneshot";
+        RemainAfterExit = true;
+        # Ensure kubectl can find the correct config file path
+        Environment = "KUBECONFIG=/etc/rancher/k3s/k3s.yaml";
+
+        ExecStart = pkgs.writeShellScript "k3s-uncordon-node" ''
+          NODE_NAME="${config.networking.hostName}"
+
+          echo "Waiting for K3s API server and node '$NODE_NAME' to become ready..."
+          # Loop until kubectl can successfully reach the API and see the node
+          until ${pkgs.k3s}/bin/kubectl get node "$NODE_NAME" &>/dev/null; do
+            echo -n "."
+            sleep 2
+          done
+
+          echo "Node found. Uncordoning '$NODE_NAME'..."
+          ${pkgs.k3s}/bin/kubectl uncordon "$NODE_NAME"
+        '';
+      };
     };
 
     boot.kernelModules = [ "iscsi_tcp" ];

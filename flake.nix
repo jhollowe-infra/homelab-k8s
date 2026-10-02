@@ -99,14 +99,17 @@
         };
         hl01-kube01 = { ... }: {
           deployment.targetHost = "hl01-kube01.kube-nodes.johnhollowell.internal";
+          # deployment.buildOnTarget = true;
           imports = [ ./hosts/hl01-kube01 ];
         };
         hl01-kube02 = { ... }: {
           deployment.targetHost = "hl01-kube02.kube-nodes.johnhollowell.internal";
+          # deployment.buildOnTarget = true;
           imports = [ ./hosts/hl01-kube02 ];
         };
         hl01-kube03 = { ... }: {
           deployment.targetHost = "hl01-kube03.kube-nodes.johnhollowell.internal";
+          # deployment.buildOnTarget = true;
           imports = [ ./hosts/hl01-kube03 ];
         };
       };

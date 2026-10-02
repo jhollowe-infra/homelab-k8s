@@ -38,6 +38,8 @@
 # source (nixos/modules/hardware/graphics.nix): `hardware.opengl.enable`
 # and `.package` are handled by mkRenamedOptionModule to
 # `hardware.graphics.{enable,package}`, so the option names below are current.
+
+# TODO research more: https://github.com/NixOS/nixpkgs/blob/master/pkgs/applications/networking/cluster/k3s/docs/examples/INTEL.md
 {
   config,
   lib,
@@ -50,9 +52,16 @@
   hardware.graphics = {
     enable = true;
     extraPackages = with pkgs; [
+      intel-compute-runtime # OpenCL
       intel-media-driver # VA-API (iHD) driver, Broadwell (Gen8)+, covers Comet Lake
     ];
   };
+
+  environment.systemPackages = with pkgs; [
+    # make debugging easier
+    pciutils
+    intel-gpu-tools
+  ];
 
   environment.sessionVariables.LIBVA_DRIVER_NAME = "iHD";
 

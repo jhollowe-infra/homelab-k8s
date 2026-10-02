@@ -113,6 +113,8 @@ in
       name = "${config.networking.hostName}-initiatorhost";
     };
 
+    # TODO look into implementing /usr/local/bin/k3s-killall.sh on shutdown to actually kill containers
+
     systemd.services.drain-k3s-on-shutdown = {
       description = "Drain K3s node before shutdown";
 

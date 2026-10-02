@@ -82,4 +82,6 @@
   ];
 
   homelabK3s.nodeLabels."homelab/gpu-nvidia" = "true";
+  # this is what the NVIDIA device-plugin requires
+  homelabK3s.nodeLabels."nvidia.com/gpu.present" = "true";
 }

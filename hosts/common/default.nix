@@ -33,7 +33,7 @@
     # `nixos-rebuild switch --rollback` being able to fall back to the
     # previous generation - keep several around, and make sure GC (below)
     # never collects them out from under it.
-    configurationLimit = 10;
+    configurationLimit = 5;
   };
 
   nix.gc = {
@@ -41,6 +41,11 @@
     dates = "weekly";
     options = "--delete-older-than 30d";
   };
+
+  services.journald.extraConfig = ''
+    SystemMaxUse=1G
+    MaxRetentionSec=1month
+  '';
 
   networking.firewall.enable = true;
   networking.firewall.allowedTCPPorts = [ 22 ];

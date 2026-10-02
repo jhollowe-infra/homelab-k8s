@@ -43,6 +43,8 @@
 {
   hardware.graphics.enable = true;
 
+  services.xserver.videoDrivers = [ "nvidia" ];
+
   hardware.nvidia = {
     modesetting.enable = true;
     powerManagement.enable = false;
@@ -55,13 +57,12 @@
     mount-nvidia-executables = true;
   };
 
-  services.xserver.videoDrivers = [ "nvidia" ];
-
   # Wire the NVIDIA runtime into k3s's embedded containerd so pods can
   # request it via RuntimeClass. The cluster-side RuntimeClass object and
   # the nvidia-device-plugin DaemonSet (which advertises nvidia.com/gpu)
   # are installed once, cluster-wide, from the app-deployment repo - not
   # here, since they're not per-node config.
+
   services.k3s.containerdConfigTemplate = ''
     {{ template "base" . }}
 
@@ -74,6 +75,11 @@
       [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.nvidia.options]
         BinaryName = "${pkgs.nvidia-container-toolkit.tools}/bin/nvidia-container-runtime.cdi"
   '';
+
+  environment.systemPackages = with pkgs; [
+    # make debugging easier
+    pciutils
+  ];
 
   homelabK3s.nodeLabels."homelab/gpu-nvidia" = "true";
 }

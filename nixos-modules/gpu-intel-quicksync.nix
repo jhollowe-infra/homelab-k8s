@@ -40,6 +40,7 @@
 # `hardware.graphics.{enable,package}`, so the option names below are current.
 
 # TODO research more: https://github.com/NixOS/nixpkgs/blob/master/pkgs/applications/networking/cluster/k3s/docs/examples/INTEL.md
+# https://wiki.nixos.org/wiki/Intel_Graphics
 {
   config,
   lib,
@@ -52,10 +53,23 @@
   hardware.graphics = {
     enable = true;
     extraPackages = with pkgs; [
-      intel-compute-runtime # OpenCL
-      intel-media-driver # VA-API (iHD) driver, Broadwell (Gen8)+, covers Comet Lake
+      # Required for modern Intel GPUs (Xe iGPU and ARC)
+      intel-media-driver # VA-API (iHD) userspace
+      vpl-gpu-rt # oneVPL (QSV) runtime
+
+      # Optional (compute / tooling):
+      intel-compute-runtime # OpenCL (NEO) + Level Zero for Arc/Xe
+      # NOTE: 'intel-ocl' also exists as a legacy package; not recommended for Arc/Xe.
+      # libvdpau-va-gl       # Only if you must run VDPAU-only apps
     ];
   };
+
+  # May help if FFmpeg/VAAPI/QSV init fails (esp. on Arc with i915):
+  # hardware.enableRedistributableFirmware = true;
+  # boot.kernelParams = [ "i915.enable_guc=3" ];
+
+  # https://nixos.org/manual/nixos/stable/#sec-x11--graphics-cards-intel
+  services.xserver.videoDrivers = [ "modesetting" ];
 
   environment.systemPackages = with pkgs; [
     # make debugging easier

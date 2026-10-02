@@ -1,4 +1,4 @@
-{ ... }:
+{ pkgs, ... }:
 {
   networking.hostName = "hl01-kube01";
 
@@ -17,7 +17,17 @@
 
   # make sure to update terraform and apply to have the PCIe passthrough before adding imports for hardware modules
   imports = [
-    # ../../nixos-modules/gpu-intel-quicksync.nix
-    # ../../nixos-modules/gpu-nvidia.nix
+    ../../nixos-modules/gpu-intel-quicksync.nix
+    ../../nixos-modules/gpu-nvidia.nix
   ];
+
+  environment.systemPackages = with pkgs; [
+    # make debugging easier
+    pciutils
+    intel-gpu-tools
+    nvtopPackages.full
+    # intel-opencl-icd
+    # nvtopPackages.intel
+  ];
+  nixpkgs.config.allowUnfree = true; # for nvtop
 }

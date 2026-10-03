@@ -7,8 +7,8 @@
     ../../nixos-modules/kube-vip.nix
     ../../nixos-modules/network.nix
     ../../nixos-modules/auto-upgrade.nix
-    # ../../nixos-modules/longhorn-disk-grow.nix
-    # ../../nixos-modules/longhorn-disk-alert.nix
+    ../../nixos-modules/longhorn-disk-grow.nix
+    ../../nixos-modules/longhorn-disk-alert.nix
   ];
 
   system.stateVersion = "26.05";

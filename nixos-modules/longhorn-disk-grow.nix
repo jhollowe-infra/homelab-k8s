@@ -27,22 +27,57 @@
 {
   systemd.services.homelab-longhorn-disk-grow = {
     description = "Grow the Longhorn disk/filesystem if the underlying virtual disk was enlarged";
+
     path = [
       pkgs.cloud-utils
       pkgs.e2fsprogs
+      pkgs.util-linux
     ];
+
     serviceConfig.Type = "oneshot";
+
     script = ''
+      set -e
+
+      partition="/dev/disk/by-partlabel/disk-longhorn-longhorn"
+      partition=$(readlink -f "$partition")
+
+      # Get the kernel device name, e.g.:
+      #   /dev/sda1       -> sda1
+      #   /dev/nvme0n1p1  -> nvme0n1p1
+      partname=$(basename "$partition")
+
+      # Get the parent disk, e.g.:
+      #   sda1       -> sda
+      #   nvme0n1p1  -> nvme0n1
+      parent=$(lsblk -no PKNAME "$partition")
+      disk="/dev/$parent"
+
+      # Remove the parent disk name from the partition name.
+      # This leaves the partition number:
+      #   sda1       -> 1
+      #   nvme0n1p1  -> p1
+      partnum="''${partname#''${parent}}"
+
+      # NVMe/MMC partition names have a 'p' separator.
+      partnum="''${partnum#p}"
+
+      echo "Growing partition $partition on disk $disk (partition $partnum)"
+
       set +e
-      growpart /dev/vdb 1
+      growpart "$disk" "$partnum"
       status=$?
       set -e
-      # growpart: 0 = grew it, 1 = already at max size (both fine)
+
+      # growpart:
+      #   0 = partition was grown
+      #   1 = partition is already at maximum size
       if [ "$status" -ne 0 ] && [ "$status" -ne 1 ]; then
         echo "growpart failed with exit code $status" >&2
         exit "$status"
       fi
-      resize2fs /dev/vdb1
+
+      resize2fs "$partition"
     '';
   };
 

@@ -55,6 +55,7 @@
   hardware.nvidia-container-toolkit = {
     enable = true;
     mount-nvidia-executables = true;
+    device-name-strategy = "uuid";
   };
 
   # Wire the NVIDIA runtime into k3s's embedded containerd so pods can

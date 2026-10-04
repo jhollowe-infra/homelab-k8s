@@ -27,9 +27,12 @@ resource "proxmox_virtual_environment_vm" "this" {
     enabled = true
   }
 
-  cdrom {
-    file_id   = proxmox_virtual_environment_file.bootstrap_iso.id
-    interface = "ide2"
+  dynamic "cdrom" {
+    for_each = var.needs_iso ? [1] : []
+    content {
+      file_id   = proxmox_virtual_environment_file.bootstrap_iso.id
+      interface = "ide2"
+    }
   }
 
   cpu {

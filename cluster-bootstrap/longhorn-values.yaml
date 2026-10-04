@@ -24,6 +24,8 @@
 defaultSettings:
   # hosts/common/disko.nix mounts the 2nd disk here on every node.
   defaultDataPath: "/var/lib/longhorn"
+  # tell kube scheduler if node can't fit volume
+  csiStorageCapacityTracking: true
 
 persistence:
   createStorageClass: true
@@ -35,3 +37,7 @@ persistence:
   defaultClassReplicaCount: 2
   reclaimPolicy: Delete
   defaultFsType: ext4
+
+metrics:
+  serviceMonitor:
+    enabled: false

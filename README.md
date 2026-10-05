@@ -5,10 +5,13 @@ Declarative kubernetes configuration running k3s on NixOS; made with the help of
 > This was repo's contents were created by an LLM and have not yet been validated. 
 
 Declarative configuration and tooling for a 3-node k3s Kubernetes cluster
-running on NixOS VMs on Proxmox. **App deployment (GitOps) lives in a
-separate repo** — this repo only covers: the Proxmox bootstrap ISO, the VMs
-themselves, the NixOS/k3s node configuration, and the storage
-infrastructure (Longhorn, TrueNAS CSI) the cluster itself depends on.
+running on NixOS VMs on Proxmox. **App deployment (GitOps, including the
+in-cluster Longhorn Helm install) lives in a separate repo**
+([`homelab-apps`](https://github.com/jhollowe-infra/homelab-apps)) — this
+repo only covers: the Proxmox bootstrap ISO, the VMs themselves, the
+NixOS/k3s node configuration, the disk Longhorn uses (provisioning,
+auto-grow, usage alerting — but not Longhorn itself), and the TrueNAS CSI
+storage backend the cluster depends on.
 
 ## Topology
 
@@ -31,10 +34,11 @@ Three tiers, matched to what actually needs to be fast vs. cheap vs. bulk:
 
 1. **Boot disk** — minimal, holds the OS + k3s only (`hosts/common/disko.nix`).
 2. **Fast local, replicated** — a 2nd virtual disk per VM, on Proxmox local
-   storage, given to **Longhorn**. Longhorn replicates each volume across 2
-   of the 3 nodes, so a PVC survives one physical host going down and the
-   pod reschedules onto a node that already has the data. Use this for
-   small/latency-sensitive data — e.g. a media server's database and
+   storage, given to **Longhorn** (installed via Flux from `homelab-apps`'s
+   `infra/longhorn`, not from this repo). Longhorn replicates each volume
+   across 2 of the 3 nodes, so a PVC survives one physical host going down
+   and the pod reschedules onto a node that already has the data. Use this
+   for small/latency-sensitive data — e.g. a media server's database and
    config. This disk starts small and grows on demand — see
    [Longhorn disk growth & alerting](#longhorn-disk-growth--alerting).
 3. **Bulk, network** — your TrueNAS NAS, exposed dynamically via
@@ -75,13 +79,14 @@ terraform/
   modules/vm/             one k8s node VM: blank disks, ISO boot, hostpci
   *.tf, terraform.tfvars.example
 cluster-bootstrap/
-  longhorn-values.yaml               Helm values for the fast-local tier
   democratic-csi-truenas-values.yaml Helm values for the TrueNAS NFS tier
+                                      (Longhorn's Helm values live in
+                                      homelab-apps's infra/longhorn)
 secrets/
   *.sops.yaml.example     templates — copy, fill in, then `sops -e -i`
 scripts/
   bootstrap-nodes.sh       first-time: nixos-anywhere on all 3 nodes
-  setup-cluster.sh         fetch kubeconfig and install Longhorn + democratic-csi
+  setup-cluster.sh         fetch kubeconfig and install democratic-csi
   add-node.sh              add a node after initial bootstrap
 ```
 
@@ -153,17 +158,18 @@ ssh "root@$node.kube-nodes.johnhollowell.internal" 'install -d -m 0755 /var/lib/
 colmena apply --on "$node"
 ```
 
-8. Fetch the kubeconfig and install the storage layer:
+8. Fetch the kubeconfig and install democratic-csi:
    ```
    ./scripts/setup-cluster.sh
    ```
   This writes `kubeconfig` in the repository root and installs or upgrades
-  Longhorn and democratic-csi. It requires the encrypted
+  democratic-csi. It requires the encrypted
   `secrets/truenas-driver-config.sops.yaml` file.
 
-Your app-deployment repo (Flux/ArgoCD, when you get to it) points at this
-cluster's kubeconfig from here on; it doesn't need anything else from this
-repo.
+Your app-deployment repo ([`homelab-apps`](https://github.com/jhollowe-infra/homelab-apps),
+Flux-based) points at this cluster's kubeconfig from here on; it also
+installs Longhorn (`infra/longhorn`), the cluster's fast-local storage
+layer, which this repo only provisions the underlying disk for.
 
 ## Day-2 operations
 
@@ -222,6 +228,10 @@ want alerting on that, `journalctl -u homelab-auto-upgrade` failing is the
 thing to hook a monitoring check to (out of scope for this repo).
 
 ## Longhorn disk growth & alerting
+
+This covers only the underlying disk this repo provisions for Longhorn;
+Longhorn itself (the Helm install, StorageClass, replica count, etc.) is
+managed by `homelab-apps`'s `infra/longhorn`.
 
 Each node's Longhorn disk (`terraform`'s `longhorn_disk_gb`, default **4GB**)
 is deliberately small at first, not sized for eventual usage — growing it

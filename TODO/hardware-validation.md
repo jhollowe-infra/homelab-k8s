@@ -92,17 +92,17 @@ none of it gets silently assumed-working just because `nix flake check` /
 
 ## Storage backends (`cluster-bootstrap/*.yaml`)
 
-- [ ] `helm show values longhorn/longhorn` and `helm show values
-      democratic-csi/democratic-csi` against the real charts, diff against
-      the field names assumed in `longhorn-values.yaml` /
+- [ ] `helm show values democratic-csi/democratic-csi` against the real
+      chart, diff against the field names assumed in
       `democratic-csi-truenas-values.yaml` (see README's Accuracy note) -
-      then do a real `helm install` of both.
-- [ ] Longhorn actually creates volumes on `/var/lib/longhorn` with 2
-      replicas per volume, and surviving 1 node down (not 2) behaves as
-      designed.
+      then do a real `helm install`.
 - [ ] democratic-csi actually provisions NFS PVs against the real TrueNAS
       box using the sops-decrypted `truenas-driver-config` secret end to
       end (mount, write, read back from a pod).
+
+Longhorn's own Helm-install/replica-count validation now belongs in
+`homelab-apps` (its `infra/longhorn`) - only this repo's disk
+provisioning/grow/alert pieces are validated below.
 
 ## Terraform / Proxmox provider (`terraform/modules/vm/main.tf`)
 

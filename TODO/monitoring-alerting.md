@@ -241,8 +241,11 @@ summary.
 1. New `nixos-modules/node-exporter.nix` (NixOS-native, all 3 nodes) +
    firewall rule for its port, mirroring the hybrid approach above.
 2. New `cluster-bootstrap/kube-prometheus-stack-values.yaml`, alongside the
-   existing `longhorn-values.yaml`/`democratic-csi-truenas-values.yaml`,
-   with: control-plane scrape targets trimmed per k3s reality (etcd
+   existing `democratic-csi-truenas-values.yaml` (Longhorn's own Helm
+   values now live in `homelab-apps`'s `infra/longhorn`, not here - this
+   stack would likely belong there too, as `infra/kube-prometheus-stack`,
+   rather than in this repo's `cluster-bootstrap/`), with: control-plane
+   scrape targets trimmed per k3s reality (etcd
    pointed at the 3 node IPs on port 2381, others off), `defaultRules`
    trimmed, scrape/eval interval + retention tuned down, explicit
    resources on every component, node-exporter subchart disabled (using

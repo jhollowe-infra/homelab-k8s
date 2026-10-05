@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
-# Fetches the k3s kubeconfig from node-1, then installs the cluster storage
-# layer (Longhorn and democratic-csi).
+# Fetches the k3s kubeconfig from node-1, then installs democratic-csi.
+# Longhorn is installed separately, via Flux, from the homelab-apps repo
+# (see infra/longhorn there) - this repo only provisions and grows the
+# underlying disk it uses (hosts/common/disko.nix,
+# nixos-modules/longhorn-disk-{grow,alert}.nix).
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -27,15 +30,9 @@ mv "$kubeconfig_tmp" kubeconfig
 trap - EXIT
 export KUBECONFIG="$(pwd)/kubeconfig"
 
-echo "==> Installing Longhorn"
-helm repo add longhorn https://charts.longhorn.io --force-update
+echo "==> Installing democratic-csi"
 helm repo add democratic-csi https://democratic-csi.github.io/charts/ --force-update
 helm repo update
-helm upgrade --install longhorn longhorn/longhorn \
-  --namespace longhorn-system --create-namespace \
-  --values cluster-bootstrap/longhorn-values.yaml
-
-echo "==> Installing democratic-csi"
 kubectl create namespace democratic-csi --dry-run=client -o yaml | kubectl apply -f -
 SOPS_AGE_KEY_FILE="$(pwd)/age-key.txt" sops -d secrets/truenas-driver-config.sops.yaml \
   | kubectl apply -n democratic-csi -f -

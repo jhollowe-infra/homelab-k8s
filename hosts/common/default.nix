@@ -10,6 +10,7 @@
     ../../nixos-modules/longhorn-disk-grow.nix
     ../../nixos-modules/longhorn-disk-alert.nix
     ../../nixos-modules/node-exporter.nix
+    ../../nixos-modules/oom-alert.nix
   ];
 
   system.stateVersion = "26.05";

@@ -16,10 +16,17 @@
 > specifics (exact metric names, exact flags) as "needs verification
 > against the real docs/a real test deploy" before actually implementing.
 
-Currently the only alerting in the homelab is the one-off Discord webhook in
-`nixos-modules/longhorn-disk-alert.nix` (Longhorn disk usage) — itself an
-example of the pattern this note's host-level alerts follow: alerting
-posted directly from a host, independent of the in-cluster stack.
+Currently the only pre-existing alerting in the homelab was the one-off
+Discord webhook in `nixos-modules/longhorn-disk-alert.nix` (Longhorn disk
+usage) — itself an example of the pattern this note's host-level alerts
+follow: alerting posted directly from a host, independent of the
+in-cluster stack. It now posts through the `resources` category secret
+(`discord-webhook-url-resources`) rather than a standalone
+`discord-webhook-url`, now that the categorized scheme below exists - the
+old uncategorized secret has been removed; **`secrets/secrets.sops.yaml`
+needs a one-time manual edit to rename/replace that field before
+redeploying** (see the note on `oom-alert.nix` below - same blocker, same
+secret).
 
 ## 1. NixOS-native `node-exporter` — DONE
 
@@ -85,13 +92,19 @@ Prometheus/Alertmanager being up. To start:
   thing that gets OOM-killed on a large first scan); instead it's made
   "light" via `OOMScoreAdjust=1000` (always the first kill candidate,
   never a contributor to the problem it's reporting), `Nice=19`, and
-  `IOSchedulingClass=idle`. Posts to a new `discord-webhook-url-resources`
+  `IOSchedulingClass=idle`. Posts to the `discord-webhook-url-resources`
   sops secret (the `resources` category per
   `homelab-apps/TODO/alerting.md`) — **you still need to create that
   Discord webhook and add the real value to `secrets/secrets.sops.yaml`**
-  (a placeholder was added to `secrets.sops.yaml.example`; the actual
-  encrypted secret needs `sops -e -i` run with real `sops`/`age` access,
-  which wasn't available in the environment that implemented this).
+  (placeholders for all 4 categories were added to
+  `secrets.sops.yaml.example`, replacing the old standalone
+  `discord-webhook-url` field entirely - both this module and
+  `longhorn-disk-alert.nix` now read `discord-webhook-url-resources`; the
+  actual encrypted secrets need `sops -e -i` run with real `sops`/`age`
+  access, which wasn't available in the environment that implemented
+  this).
+  **Not yet tested against a live node/journal - see
+  `TODO/test-oom-alert.md` before trusting it unattended.**
 - **Root disk >=95% full for at least 30 minutes** (sustained, not a
   momentary spike).
 - **NixOS auto-update failure.** The auto-update's status (success or

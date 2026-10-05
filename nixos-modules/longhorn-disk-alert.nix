@@ -4,6 +4,10 @@
 # separate module/service (homelab-longhorn-disk-grow, see
 # longhorn-disk-grow.nix) - split out so growing and alerting can be
 # reasoned about/tested independently.
+#
+# Posts to the `resources` category (same as oom-alert.nix), per
+# homelab-apps's TODO/alerting.md Discord webhook/category split -
+# "something is resource-constrained" covers Longhorn disk pressure too.
 {
   config,
   lib,
@@ -23,7 +27,7 @@ in
   };
 
   config = {
-    sops.secrets.discord-webhook-url = {
+    sops.secrets.discord-webhook-url-resources = {
       sopsFile = ../secrets/secrets.sops.yaml;
       owner = "root";
       mode = "0400";
@@ -37,7 +41,7 @@ in
       ];
       serviceConfig.Type = "oneshot";
       script = ''
-        webhook="$(cat ${config.sops.secrets.discord-webhook-url.path})"
+        webhook="$(cat ${config.sops.secrets.discord-webhook-url-resources.path})"
         state_file=/var/lib/homelab-longhorn-alert-state
         used_pct=$(df --output=pcent /var/lib/longhorn | tail -1 | tr -dc '0-9')
         hostname=${config.networking.hostName}

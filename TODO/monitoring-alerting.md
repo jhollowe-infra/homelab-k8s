@@ -21,25 +21,26 @@ Currently the only alerting in the homelab is the one-off Discord webhook in
 example of the pattern this note's host-level alerts follow: alerting
 posted directly from a host, independent of the in-cluster stack.
 
-## 1. NixOS-native `node-exporter`
+## 1. NixOS-native `node-exporter` — DONE
 
-Run `node-exporter` as a native NixOS systemd service
-(`services.prometheus.exporters.node`) on all 3 nodes, instead of
-kube-prometheus-stack's node-exporter DaemonSet (disable that subchart in
-`homelab-apps`'s Helm values to avoid running it twice). Point
-`homelab-apps`'s Prometheus at it via `additionalScrapeConfigs`/a static
-target list.
+Implemented in `nixos-modules/node-exporter.nix`, imported by every node via
+`hosts/common/default.nix`. Runs `services.prometheus.exporters.node` (the
+`systemd` collector explicitly enabled, since it's off by default in
+node_exporter itself; `openFirewall` on, which adds its own scoped firewall
+rule for port 9100, not via `networking.firewall.allowedTCPPorts`),
+confirmed directly against the nixpkgs module source (not just a search
+summary) — see the comment in that file.
+
+This replaces the kube-prometheus-stack chart's `nodeExporter` DaemonSet
+(disable that subchart in `homelab-apps`'s Helm values); `homelab-apps`'s
+Prometheus still needs an `additionalScrapeConfigs`/static target list
+pointing at each node's IP on port 9100 — that wiring is `homelab-apps`'s
+side of this, not done here.
 
 Rationale: this keeps reporting host-level metrics (disk, CPU, memory,
 systemd unit state) even if k3s/containerd itself is the thing that's
 broken — exactly the failure mode worth catching early (a node going bad
-without the other 2 noticing). Given these nodes are already managed
-declaratively via NixOS (`hosts/common/default.nix`), this fits naturally
-as another `nixos-modules/*.nix` module, similar in spirit to `k3s.nix`.
-
-Confirm the NixOS option name/`enabledCollectors` list against the actual
-NixOS module docs (`nixos-option` / search.nixos.org) before implementing,
-since specifics above came from a search summary, not verified docs.
+without the other 2 noticing).
 
 ## 2. k3s config flags needed for `homelab-apps`'s Prometheus to scrape
 
@@ -68,7 +69,29 @@ Posted directly from the host (same pattern as
 `nixos-modules/longhorn-disk-alert.nix`), not depending on
 Prometheus/Alertmanager being up. To start:
 
-- **OOM killer invocations.**
+- **OOM killer invocations — DONE.** Implemented in
+  `nixos-modules/oom-alert.nix`, imported by every node via
+  `hosts/common/default.nix`. Fires once per OOM-killer invocation (not
+  deduped/throttled like the Longhorn disk alert, since each OOM kill is
+  its own distinct event worth reporting). Deliberately avoids
+  `journalctl -f` (a long-running follow process would keep journal data
+  mapped into memory for its whole lifetime — counterproductive for a
+  service meant to help during memory pressure); instead it's a oneshot
+  on a 1-minute timer using `journalctl --cursor-file` to pick up exactly
+  where the last run left off, filtered to kernel messages matching
+  "Killed process" (the exact text the kernel's OOM killer logs, per
+  `mm/oom_kill.c`). No hard `MemoryMax` (journalctl's mmap'd journal pages
+  would get charged to the service's own cgroup and could make it the
+  thing that gets OOM-killed on a large first scan); instead it's made
+  "light" via `OOMScoreAdjust=1000` (always the first kill candidate,
+  never a contributor to the problem it's reporting), `Nice=19`, and
+  `IOSchedulingClass=idle`. Posts to a new `discord-webhook-url-resources`
+  sops secret (the `resources` category per
+  `homelab-apps/TODO/alerting.md`) — **you still need to create that
+  Discord webhook and add the real value to `secrets/secrets.sops.yaml`**
+  (a placeholder was added to `secrets.sops.yaml.example`; the actual
+  encrypted secret needs `sops -e -i` run with real `sops`/`age` access,
+  which wasn't available in the environment that implemented this).
 - **Root disk >=95% full for at least 30 minutes** (sustained, not a
   momentary spike).
 - **NixOS auto-update failure.** The auto-update's status (success or
@@ -77,20 +100,15 @@ Prometheus/Alertmanager being up. To start:
   pushgateway, or similar), but this host-level alert itself should only
   *fire* on failure, not on every successful run.
 
-Each of these posts to whichever Discord webhook/category `homelab-apps`'s
-alerting plan assigns it to (see `homelab-apps/TODO/alerting.md`'s
-category list) — exact assignment TBD at implementation time.
-
 ## Open questions to resolve before implementing
 
-- Exact NixOS module option names/`enabledCollectors` for
-  `services.prometheus.exporters.node` — verify against NixOS docs.
 - Exact k3s flag/metric names for etcd and cert-expiry metrics exposure —
   verify against k3s docs before relying on search-summarized names.
 - Mechanism for pushing NixOS auto-update status into the metrics system
   on success (textfile collector vs. pushgateway vs. other).
-- Which Discord category (per `homelab-apps`'s alerting plan) each
-  host-level alert (OOM, disk, auto-update failure) belongs to.
+- Which Discord category (per `homelab-apps`'s alerting plan) the disk and
+  auto-update-failure alerts belong to (OOM is settled: `resources`, see
+  above).
 - Follow-up TODO (not yet scoped): pull in Proxmox host-level and
   NixOS-VM-level status, so host/hypervisor health (separate from
   in-cluster k8s monitoring) is covered too.

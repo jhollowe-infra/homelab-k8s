@@ -89,8 +89,11 @@ in
       extraFlags = lib.concatStringsSep " " (
         [
           # Longhorn needs its own replication/HA; disable k3s's built-in
-          # single-node local-path-provisioner and Traefik/ServiceLB, which
-          # you don't want fighting with your own ingress/storage choices.
+          # single-node local-path-provisioner. Traefik/ServiceLB are also
+          # disabled: homelab-apps's Flux-managed MetalLB + separately
+          # Helm-managed Traefik (see README's "External ingress & load
+          # balancing") replace them, and ServiceLB would otherwise race
+          # MetalLB for the same `type: LoadBalancer` Services.
           "--disable=local-storage"
           "--disable=traefik"
           "--disable=servicelb"

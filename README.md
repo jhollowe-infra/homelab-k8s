@@ -6,12 +6,14 @@ Declarative kubernetes configuration running k3s on NixOS; made with the help of
 
 Declarative configuration and tooling for a 3-node k3s Kubernetes cluster
 running on NixOS VMs on Proxmox. **App deployment (GitOps, including the
-in-cluster Longhorn Helm install) lives in a separate repo**
+in-cluster Longhorn Helm install and the external ingress/load-balancing
+stack) lives in a separate repo**
 ([`homelab-apps`](https://github.com/jhollowe-infra/homelab-apps)) — this
 repo only covers: the Proxmox bootstrap ISO, the VMs themselves, the
-NixOS/k3s node configuration, the disk Longhorn uses (provisioning,
-auto-grow, usage alerting — but not Longhorn itself), and the TrueNAS CSI
-storage backend the cluster depends on.
+NixOS/k3s node configuration (including the kube-vip API-server VIP), the
+disk Longhorn uses (provisioning, auto-grow, usage alerting — but not
+Longhorn itself), and the TrueNAS CSI storage backend the cluster depends
+on.
 
 ## Topology
 
@@ -46,6 +48,33 @@ Three tiers, matched to what actually needs to be fast vs. cheap vs. bulk:
    data — e.g. the media files themselves.
 
 A media server (e.g. Jellyfin) app or notes app (e.g. Nextcloud) would mount tier 2 for its database/config PVC and tier 3 for the media library/content PVC.
+
+## External ingress & load balancing
+
+Two separate VIPs, two separate mechanisms, don't conflate them:
+
+- **k3s API server VIP** (`10.10.100.10`,
+  `k8s-api-vip.kube-nodes.johnhollowell.internal`) — **kube-vip**, static
+  pod, managed by *this* repo (`nixos-modules/kube-vip.nix`). Exists so the
+  3 control-plane nodes have a stable address with failover. See
+  [One-time setup](#one-time-setup).
+- **External app traffic VIP(s)** (currently `10.10.100.5`) — **MetalLB**
+  (L2 mode) handing a `type: LoadBalancer` Service to a separately
+  Helm-managed **Traefik** (not k3s's bundled Traefik, which
+  `nixos-modules/k3s.nix` disables via `--disable=traefik
+  --disable=servicelb` specifically so it doesn't race MetalLB for the same
+  Services), fronted by **cert-manager** (HTTP-01 challenges against a
+  `letsencrypt-prod` `ClusterIssuer`) for TLS. All three are installed and
+  managed entirely via Flux from `homelab-apps`'s `infra/` (`infra/metallb`
+  + `infra/metallb-config`, `infra/traefik`, `infra/cert-manager` +
+  `infra/cert-manager-config`) — **not** from this repo. Individual apps'
+  `Ingress`/`IngressRoute` objects also live in `homelab-apps`.
+- OPNsense's job for the MetalLB/Traefik VIP is just a static NAT
+  port-forward (WAN -> the VIP); it does not run its own LB/HAProxy for
+  this by design.
+- This repo's only touchpoint with that stack is the `--disable=traefik
+  --disable=servicelb` k3s flags above, which must stay set as a
+  precondition for MetalLB to work.
 
 ## NixOS bootstrap ISO
 

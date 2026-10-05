@@ -63,6 +63,7 @@ in
       10250 # kublet API
       2379 # embedded etcd client
       2380 # embedded etcd peer
+      2381 # embedded etcd metrics
     ];
     networking.firewall.allowedUDPPorts = [
       8472 # VXLAN
@@ -97,6 +98,10 @@ in
           "--disable=local-storage"
           "--disable=traefik"
           "--disable=servicelb"
+          # Exposes the embedded etcd's metrics endpoint on 0.0.0.0:2381
+          # (vs. the default 127.0.0.1-only) for homelab-apps's Prometheus
+          # to scrape
+          "--etcd-expose-metrics=true"
         ]
         ++ (map (san: "--tls-san=${san}") cfg.tlsSan)
         ++ (lib.mapAttrsToList (k: v: "--node-label=${k}=${v}") cfg.nodeLabels)

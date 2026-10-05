@@ -54,11 +54,15 @@ without the other 2 noticing).
 These are NixOS/k3s config changes that belong here even though the
 consuming Prometheus scrape config lives in `homelab-apps`:
 
-- **etcd metrics**: since all 3 nodes run k3s's embedded HA etcd, enable
-  `etcd-expose-metrics: true` (port 2381) so `homelab-apps`'s
-  `kubeEtcd.endpoints` can point at the 3 node IPs directly, rather than
-  relying on kube-prometheus-stack's kubeadm-style auto-discovery (which
-  doesn't apply to k3s).
+- **etcd metrics — DONE.** `nixos-modules/k3s.nix` now passes
+  `--etcd-expose-metrics=true` (verified directly against k3s's own CLI
+  source, `pkg/cli/cmds/server.go`, and its documented behavior: enabling
+  this flag alone reconfigures the embedded etcd's `listen-metrics-urls`
+  from `http://127.0.0.1:2381` to `http://0.0.0.0:2381` - no extra
+  `--etcd-arg` override needed). Firewall port 2381 opened in the same
+  file. `homelab-apps`'s `kubeEtcd.enabled`/`.endpoints` still needs to be
+  flipped on and pointed at the 3 node IPs on port 2381 - that's
+  `homelab-apps`'s side of this, not done here.
 - **Certificate expiry**: k3s auto-rotates most certs on service restart
   within ~120 days of a 365-day validity per search results, but the root
   CAs are ~10yr and don't auto-renew. k3s's own `supervisor-metrics`

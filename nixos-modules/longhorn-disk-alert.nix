@@ -40,7 +40,8 @@ in
         webhook="$(cat ${config.sops.secrets.discord-webhook-url.path})"
         state_file=/var/lib/homelab-longhorn-alert-state
         used_pct=$(df --output=pcent /var/lib/longhorn | tail -1 | tr -dc '0-9')
-        hostname=$(hostname)
+        hostname=${config.networking.hostName}
+        echo "Longhorn disk usage on $hostname: $used_pct% used (threshold ${toString cfg.thresholdPercent}%)"
 
         should_alert=false
         if [ "$used_pct" -ge ${toString cfg.thresholdPercent} ]; then
@@ -60,7 +61,7 @@ in
           echo "Longhorn disk on $hostname at ''${used_pct}%, alerting."
           curl -sf -X POST "$webhook" \
             -H "Content-Type: application/json" \
-            -d "{\"content\": \":warning: **$hostname**: Longhorn disk (/var/lib/longhorn) is at ''${used_pct}% used. Grow it: bump longhorn_disk_gb for this node in terraform.tfvars and run tofu apply - this node auto-grows into the new space within 15 minutes.\"}"
+            -d "{\"content\": \":warning: **$hostname**: Longhorn disk (/var/lib/longhorn) is at ''${used_pct}% used (threshold ${toString cfg.thresholdPercent}%). Grow it: bump longhorn_disk_gb for this node in terraform.tfvars and run tofu apply - the partition/FS auto-grows into the new space within 15 minutes.\"}"
         fi
       '';
     };

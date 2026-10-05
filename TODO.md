@@ -1,9 +1,12 @@
 - setup pre-commit
   - tofu fmt and tofu validate
   - nixfmt
-- make a ansible playbook for the proxmox hosts
+- do the drain/uncordon services correctly only remove containers on shutdown? or will a `systemctl restart k3s.service` also cause a drain (which is not what we want)?
+- swapfile?
+- make an ansible playbook for the proxmox hosts
   - add IOMMU flags to /etc/kernel/cmdline
   - add /etc/modules-load.d/vfio.cfg with the needed contents
   - add `post-up /usr/sbin/ethtool -K nic0 tso off gso off || true` to nic0 in /etc/network/interfaces
     - or maybe do it as a .d file so it won't possibly be clobbered by the proxmox GUI
   - install jhollowe/dotfiles into the root user homedir
+- make the longhorn alert send an all-clear once usage drops below the theshold

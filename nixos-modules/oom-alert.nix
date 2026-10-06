@@ -31,7 +31,7 @@
   ...
 }:
 {
-  sops.secrets.discord-webhook-url-resources = {
+  sops.secrets.discord-webhook-resources = {
     sopsFile = ../secrets/secrets.sops.yaml;
     owner = "root";
     mode = "0400";
@@ -60,7 +60,7 @@
       StateDirectory = "homelab-oom-alert";
     };
     script = ''
-      webhook="$(cat ${config.sops.secrets.discord-webhook-url-resources.path})"
+      webhook="$(cat ${config.sops.secrets.discord-webhook-resources.path})"
       cursor_file=/var/lib/homelab-oom-alert/cursor
       hostname=${config.networking.hostName}
 

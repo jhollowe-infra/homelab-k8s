@@ -4,7 +4,7 @@ Delete this file once the OOM alert (see `TODO/monitoring-alerting.md`
 section 3) has been manually verified working on real hardware - it's
 scratch/throwaway testing instructions, not a permanent design note.
 
-Prerequisite: `discord-webhook-url-resources` must be populated with a
+Prerequisite: `discord-webhook-resources` must be populated with a
 real Discord webhook in `secrets/secrets.sops.yaml` and deployed, per
 `secrets/secrets.sops.yaml.example`.
 

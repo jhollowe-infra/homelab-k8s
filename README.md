@@ -283,7 +283,7 @@ next timer run (within 15 minutes) — that's the entire manual step.
 Shrinking is not supported (Proxmox/ext4 can't safely shrink this way), so
 it's fine to be conservative rather than guess high.
 
-Requires the `discord-webhook-url-resources` secret (Discord channel →
+Requires the `discord-webhook-resources` secret (Discord channel →
 Integrations → Webhooks) filled in during [One-time setup](#one-time-setup)
 step 3.
 

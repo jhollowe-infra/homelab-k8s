@@ -27,7 +27,7 @@ in
   };
 
   config = {
-    sops.secrets.discord-webhook-url-resources = {
+    sops.secrets.discord-webhook-resources = {
       sopsFile = ../secrets/secrets.sops.yaml;
       owner = "root";
       mode = "0400";
@@ -41,7 +41,7 @@ in
       ];
       serviceConfig.Type = "oneshot";
       script = ''
-        webhook="$(cat ${config.sops.secrets.discord-webhook-url-resources.path})"
+        webhook="$(cat ${config.sops.secrets.discord-webhook-resources.path})"
         state_file=/var/lib/homelab-longhorn-alert-state
         used_pct=$(df --output=pcent /var/lib/longhorn | tail -1 | tr -dc '0-9')
         hostname=${config.networking.hostName}

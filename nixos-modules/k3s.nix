@@ -129,7 +129,7 @@ in
       # Ensure it runs AFTER k3s is fully operational during boot,
       # which means systemd will stop it BEFORE k3s stops during shutdown.
       after = [ "k3s.service" ];
-      requires = [ "k3s.service" ];
+      wants = [ "k3s.service" ];
       # Ensure this service stops before shutdown.target (i.e., during the
       # normal service shutdown phase, not during the final "unmount everything"
       # phase). Without this, DefaultDependencies=no breaks shutdown ordering.
@@ -152,8 +152,13 @@ in
         ExecStart = "${pkgs.coreutils}/bin/true";
 
         # The actual drain action triggered strictly on shutdown/reboot
-        ExecStop = ''
-          ${pkgs.k3s}/bin/kubectl drain %H \
+        ExecStop = pkgs.writeShellScript "k3s-drain-on-shutdown" ''
+          if [ "$(${pkgs.systemd}/bin/systemctl is-system-running 2>/dev/null)" != "stopping" ]; then
+            # not shutting down, so don't drain the node
+            exit 0
+          fi
+
+          exec ${pkgs.k3s}/bin/kubectl drain %H \
             --ignore-daemonsets \
             --delete-emptydir-data \
             --force \

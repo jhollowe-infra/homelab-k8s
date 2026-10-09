@@ -1,0 +1,102 @@
+---
+- name: Initial Proxmox VE host setup
+  hosts: proxmox
+  become: true
+  gather_facts: true
+
+  tasks:
+    - name: Verify this is a Proxmox VE host
+      ansible.builtin.command: pveversion
+      changed_when: false
+
+    - name: Verify the host uses Debian and has a release codename
+      ansible.builtin.assert:
+        that:
+          - ansible_facts['distribution'] == 'Debian'
+          - ansible_facts['distribution_release'] | length > 0
+        fail_msg: This playbook requires a Debian-based Proxmox VE host.
+
+    - name: Disable standard Proxmox enterprise apt source files
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - /etc/apt/sources.list.d/pve-enterprise.list
+        - /etc/apt/sources.list.d/pve-enterprise.sources
+        - /etc/apt/sources.list.d/ceph.list
+        - /etc/apt/sources.list.d/ceph.sources
+
+    - name: Add the Proxmox no-subscription apt repository
+      ansible.builtin.apt_repository:
+        repo: "deb http://download.proxmox.com/debian/pve {{ ansible_facts['distribution_release'] }} pve-no-subscription"
+        filename: proxmox
+        state: present
+        update_cache: false
+
+    - name: Update apt package indexes
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 3600
+
+    - name: Detect interfaces using the e1000e driver
+      ansible.builtin.shell: |
+        for interface_path in /sys/class/net/*; do
+          [ -e "$interface_path/device/driver" ] || continue
+          driver_path=$(readlink -f "$interface_path/device/driver") || continue
+          [ "${driver_path##*/}" = e1000e ] || continue
+          printf '%s\n' "${interface_path##*/}"
+        done
+      check_mode: false
+      changed_when: false
+      register: proxmox_e1000e_detection
+
+    - name: Report e1000e interfaces
+      ansible.builtin.debug:
+        msg: >-
+          Detected e1000e interfaces: {{ proxmox_e1000e_detection.stdout_lines | join(', ') if proxmox_e1000e_detection.stdout_lines else 'none' }}
+
+    - name: Ensure Intel IOMMU kernel parameters are present
+      ansible.builtin.lineinfile:
+        path: /etc/kernel/cmdline
+        regexp: '^(?!.*(?:^|\s){{ item }}(?:\s|$))(.*)$'
+        line: '\g<1> {{ item }}'
+        backrefs: true
+      loop:
+        - intel_iommu=on
+        - iommu=pt
+      notify: Rebuild initramfs
+
+    - name: Configure VFIO modules to load at boot
+      ansible.builtin.copy:
+        dest: /etc/modules-load.d/vfio.conf
+        owner: root
+        group: root
+        mode: "0644"
+        content: |
+          vfio
+          vfio_iommu_type1
+          vfio_pci
+      notify: Rebuild initramfs
+
+    - name: Configure e1000e hardware offload settings
+      ansible.builtin.copy:
+        dest: /etc/network/interfaces.d/disable-hw-offload.cfg
+        owner: root
+        group: root
+        mode: "0644"
+        content: |
+          {% for interface in proxmox_e1000e_detection.stdout_lines %}
+          iface {{ interface }} inet manual
+              post-up /usr/sbin/ethtool -K {{ interface }} tso off gso off || true
+          {% endfor %}
+      when: proxmox_e1000e_detection.stdout_lines | length > 0
+
+    - name: Remove e1000e configuration when no matching interfaces exist
+      ansible.builtin.file:
+        path: /etc/network/interfaces.d/disable-hw-offload.cfg
+        state: absent
+      when: proxmox_e1000e_detection.stdout_lines | length == 0
+
+  handlers:
+    - name: Rebuild initramfs
+      ansible.builtin.command: update-initramfs -u -k all

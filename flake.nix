@@ -129,8 +129,7 @@
             pkgs.kubernetes-helm
             pkgs.jq
             pkgs.openssh
-
-            pkgs.dig
+            pkgs.ansible
           ];
         };
       };

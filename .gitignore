@@ -22,3 +22,5 @@ result
 result-*
 
 id_ed25519
+
+pve-ansible/inventory.yml

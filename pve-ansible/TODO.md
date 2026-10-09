@@ -1,0 +1,15 @@
+create ansible playbook to do the following setup steps
+- add no-subscription apt repo
+- remove/disable enterprise apt repo
+- remove/disable enterprise ceph apt repo
+- add `intel_iommu=on iommu=pt` to the end of the line in `/etc/kernel/cmdline`
+- create `/etc/modules-load.d/vfio.conf` with following lines
+  - `vfio`
+  - `vfio_iommu_type1`
+  - `vfio_pci`
+- run `update-initramfs -u -k all` once modules and cmdline settings are done
+  - this automatically triggers `proxmox-boot-tool`, so no separate call is needed
+- connect NFS for shared files?
+- join cluster?
+- for interfaces that are Intel e1000e network interface cards (such as the I217, I218, I219, or PRO/1000 series), add the following lines to /etc/network/interfaces.d/disable-hw-offload.cfg for that interface
+  - `post-up /usr/sbin/ethtool -K nic0 tso off gso off || true`

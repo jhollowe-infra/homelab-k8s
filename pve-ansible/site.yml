@@ -38,6 +38,13 @@
         update_cache: true
         cache_valid_time: 3600
 
+    - name: Disable the Proxmox subscription notice
+      ansible.builtin.replace:
+        path: /usr/share/javascript/proxmox-widget-toolkit/proxmoxlib.js
+        regexp: nodes/localhost/subscription
+        replace: nodes/localhost/version
+      notify: Restart pveproxy.service
+
     - name: Detect interfaces using the e1000e driver
       ansible.builtin.shell: |
         for interface_path in /sys/class/net/*; do
@@ -100,3 +107,8 @@
   handlers:
     - name: Rebuild initramfs
       ansible.builtin.command: update-initramfs -u -k all
+
+    - name: Restart pveproxy.service
+      ansible.builtin.service:
+        name: pveproxy.service
+        state: restarted

@@ -3,7 +3,8 @@
 This playbook configures the Proxmox no-subscription apt repository, disables
 the standard PVE and Ceph enterprise source files, enables Intel IOMMU and
 VFIO modules, and disables TSO/GSO on interfaces detected with the e1000e
-kernel driver.
+kernel driver. It also disables the Proxmox subscription notice which restarts
+`pveproxy` if it changes the notice configuration.
 It targets Proxmox VE 8+ hosts using `/etc/kernel/cmdline`.
 
 ## Run

@@ -75,6 +75,8 @@ let
     name = "homelab-auto-upgrade";
     runtimeInputs = [
       pkgs.nixos-rebuild
+      pkgs.curl
+      pkgs.coreutils
     ]
     ++ lib.optional k3sEnabled config.services.k3s.package;
     text = ''
@@ -99,6 +101,7 @@ let
                 exit 0
               fi
               echo "Cluster did not become healthy after the upgrade - rolling back."
+              failure_reason="Post-upgrade cluster health check failed"
             ''
           else
             ''
@@ -108,6 +111,16 @@ let
         }
       else
         echo "nixos-rebuild failed - rolling back."
+        failure_reason="nixos-rebuild switch failed"
+      fi
+
+      if webhook="$(cat ${config.sops.secrets.discord-webhook-resources.path})" \
+        && curl -sf -X POST "$webhook" \
+          -H "Content-Type: application/json" \
+          -d "{\"content\": \":warning: **${config.networking.hostName}**: NixOS auto-upgrade failed: $failure_reason. A rollback is being attempted. Check journalctl -u homelab-auto-upgrade for details.\"}"; then
+        echo "Failure alert sent to Discord."
+      else
+        echo "Failed to send the Discord failure alert." >&2
       fi
 
       nixos-rebuild switch --rollback
@@ -137,6 +150,12 @@ in
   };
 
   config = {
+    sops.secrets.discord-webhook-resources = {
+      sopsFile = ../secrets/secrets.sops.yaml;
+      owner = "root";
+      mode = "0400";
+    };
+
     systemd.services.homelab-auto-upgrade = {
       description = "Pull and apply homelab-k8s NixOS config, with health-checked rollback";
       script = "${upgradeScript}/bin/homelab-auto-upgrade";

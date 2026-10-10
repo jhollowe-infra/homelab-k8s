@@ -27,11 +27,13 @@
         - /etc/apt/sources.list.d/ceph.sources
 
     - name: Add the Proxmox no-subscription apt repository
-      ansible.builtin.apt_repository:
-        repo: "deb http://download.proxmox.com/debian/pve {{ ansible_facts['distribution_release'] }} pve-no-subscription"
-        filename: proxmox
+      ansible.builtin.deb822_repository:
+        name: proxmox
+        types: deb
+        uris: http://download.proxmox.com/debian/pve
+        suites: "{{ ansible_facts['distribution_release'] }}"
+        components: pve-no-subscription
         state: present
-        update_cache: false
 
     - name: Update apt package indexes
       ansible.builtin.apt:

@@ -7,7 +7,10 @@
   tasks:
     - name: Verify this is a Proxmox VE host
       ansible.builtin.command: pveversion
+      check_mode: false
       changed_when: false
+      failed_when: pveversion_check.rc != 0
+      register: pveversion_check
 
     - name: Verify the host uses Debian and has a release codename
       ansible.builtin.assert:

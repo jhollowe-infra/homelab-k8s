@@ -102,6 +102,13 @@ in
           # (vs. the default 127.0.0.1-only) for homelab-apps's Prometheus
           # to scrape
           "--etcd-expose-metrics=true"
+          # MutatingAdmissionPolicy (used by homelab-apps's
+          # infra/pod-defaults to default secure pod securityContext
+          # settings) is Beta and off by default in Kubernetes 1.34-1.35;
+          # it is Stable and on by default from 1.36.
+          # TEMPORARY: remove both flags below once k3s is on 1.36+.
+          "--kube-apiserver-arg=feature-gates=MutatingAdmissionPolicy=true"
+          "--kube-apiserver-arg=runtime-config=admissionregistration.k8s.io/v1beta1=true"
         ]
         ++ (map (san: "--tls-san=${san}") cfg.tlsSan)
         ++ (lib.mapAttrsToList (k: v: "--node-label=${k}=${v}") cfg.nodeLabels)

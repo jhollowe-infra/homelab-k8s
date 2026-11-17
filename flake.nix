@@ -19,10 +19,7 @@
       url = "github:nix-community/nixos-anywhere";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    nixos-common = {
-      url = "github:jhollowe-infra/nixos-common";
-      flake = false;
-    };
+    nixos-common.url = "github:jhollowe-infra/nixos-common";
   };
 
   outputs =
@@ -39,14 +36,14 @@
     let
       system = "x86_64-linux";
       pkgs = import nixpkgs { inherit system; };
-      nixosCommonModules = map (module: nixos-common + module) [
-        "/env/qemu.nix"
-        "/fs/swapfile.nix"
-        "/env/ny_time.nix"
-        "/env/en_us_utf8.nix"
-        "/net/default.nix"
-        "/workloads/ssh.nix"
-        "/workloads/flakes.nix"
+      nixosCommonModules = with nixos-common.nixosModules; [
+        env-qemu
+        fs-swapfile
+        env-ny-time
+        env-en-us-utf8
+        net
+        workloads-ssh
+        workloads-flakes
       ];
 
       mkHost =

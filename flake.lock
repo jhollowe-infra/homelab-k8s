@@ -169,13 +169,12 @@
       }
     },
     "nixos-common": {
-      "flake": false,
       "locked": {
-        "lastModified": 1723696011,
-        "narHash": "sha256-0qZpoHfSYQTk0VZfl7FpBpS3fub81NaX8KoY6fMu0sc=",
+        "lastModified": 1794867162,
+        "narHash": "sha256-u1x9EzN+y5aKxSZPIQ1qVHK3sz+4y3cdxeuCbwzYMAw=",
         "owner": "jhollowe-infra",
         "repo": "nixos-common",
-        "rev": "5a64ff89e68de9f089395a01b97733c293431658",
+        "rev": "359b2400cbb1cd61358eee0018439434e62c541e",
         "type": "github"
       },
       "original": {
